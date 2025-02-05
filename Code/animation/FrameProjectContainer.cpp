@@ -14,12 +14,12 @@ FrameProjectContainer::~FrameProjectContainer()
 }
 
 
-/// @brief saves the data for the next raycast, please note that the pointer might go out of scope!
+/// @brief saves the data for the next raycast
 /// THIS OBJECT IS INTENDED FOR SETUP EACH TIME NEWLY
-/// @param worldIn 
+/// @param worldIn world pointer for raycasting
 /// @param currentActorMatrixTemporary actor matrix of starting joint (for example of leg, rotated) for raycasting
-/// @param velocity 
-/// @param lookDir 
+/// @param velocity velocity for actor
+/// @param lookDir look dir of actor
 void FrameProjectContainer::setup(
     UWorld *worldIn, 
     MMatrix &currentActorMatrixTemporary, 
