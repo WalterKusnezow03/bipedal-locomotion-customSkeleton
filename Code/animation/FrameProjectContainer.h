@@ -6,7 +6,10 @@
 #include "p2/entities/customIk/MMatrix.h"
 
 /**
+ * will store the world, actor matrix (with orientation) to bring a frame from world to cocala space
+ * velocity and look direction for moving projected frames to the future
  * 
+ * can store the world hit result and offset made during projection (For later gravity adjustment on actor)
  */
 class P2_API FrameProjectContainer
 {

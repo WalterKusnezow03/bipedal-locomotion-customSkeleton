@@ -619,13 +619,10 @@ void BoneController::refreshLocomotionframes(){
 			FrameProjectContainer container = generateFrameProjectContainer(FOOT_1);
 			legDoubleKeys_1.forceRefreshTarget(container);
 
-			//MMatrix transform = currentTransform(FOOT_1);
-			//legDoubleKeys_1.forceProjectNextFrame(GetWorld(), transform);
 		}else{
 			FrameProjectContainer container = generateFrameProjectContainer(FOOT_2);
 			legDoubleKeys_2.forceRefreshTarget(container);
-			//MMatrix transform = currentTransform(FOOT_2);
-			//legDoubleKeys_2.forceProjectNextFrame(GetWorld(), transform);
+			
 		}
 	}
 }
