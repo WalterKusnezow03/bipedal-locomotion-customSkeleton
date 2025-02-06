@@ -68,6 +68,8 @@ public:
 	void rotateNextFrames(float singedAngleYaw);
 	void resetRotationOnFramesFlag();
 
+	void resetAnimationToStartAndResetRotation();
+
 private:
 	void addRotationToFrame(FVector &localFrameToRotate);
 	bool rotateFramesBasedOnAngle = false;
@@ -113,12 +115,6 @@ private:
 	void updateFrameInterpolator();
 
 
-
-
-
-
-private:
-	
 
 	void projectToGround(
 		FrameProjectContainer &containerInOut,

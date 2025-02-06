@@ -56,7 +56,7 @@ FVector DoubleKeyFrameAnimation::interpolate(float DeltaTime){
 
         if(framesA.reachedLastFrameOfAnimation()){
 
-            rotationRequested = false;
+        
             isAnimationAPlaying = false; //switch to B
             aReachedTickFrame = interpolated;
 
@@ -320,7 +320,6 @@ FVector DoubleKeyFrameAnimation::interpolate(float DeltaTime, FVector currentRel
 
         if(framesA.reachedLastFrameOfAnimation()){
 
-            rotationRequested = false;
 
             isAnimationAPlaying = false; //switch to B
             aReachedTickFrame = interpolated;
@@ -407,8 +406,6 @@ FVector DoubleKeyFrameAnimation::interpolateWorld(
             isAnimationAPlaying = false; //switch to B
             aReachedTickFrame = interpolated;
 
-            rotationRequested = false; //reset rotation flag
-
             //intepolierte position relativ zur hüfte ist einfach 
             //den vektor umdrehen
             if(bIsSetToAutoOverride){
@@ -489,22 +486,12 @@ void DoubleKeyFrameAnimation::updateInterpolatorB(FVector reachedA){
 void DoubleKeyFrameAnimation::rotateNextFramesA(
     float signedAngleYawDegree
 ){
-    if(!rotationRequested){
-        //some class variable to track blocking roation only once allowed per animation
-        rotationRequested = true;
-        framesA.rotateNextFrames(signedAngleYawDegree);
-
-
-        //update later hip adjust interpolatorB
-        FRotator startNone;
-        FRotator targetRotator;
-        targetRotator.Yaw = signedAngleYawDegree;
-        interpolateB.overrideStart(startNone);
-        interpolateB.overrideTarget(targetRotator);
-    }
+    framesA.rotateNextFrames(signedAngleYawDegree);
 }
 
 
-void DoubleKeyFrameAnimation::setToA(){
+void DoubleKeyFrameAnimation::resetAnimationToStartAndResetRotation(){
     isAnimationAPlaying = true;
+    cycleComplete = false;
+    framesA.resetAnimationToStartAndResetRotation();
 }

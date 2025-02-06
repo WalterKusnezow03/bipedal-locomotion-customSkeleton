@@ -390,7 +390,8 @@ FVector BoneController::GetLocation(){
 
 
 bool BoneController::isANewLookDirection(FVector &other){
-	if(latestLookAtDirection == other){
+	other = other.GetSafeNormal();
+	if (FVector::DotProduct(other, latestLookAtDirection) >= 1.0f){
 		return false;
 	}
 	latestLookAtDirection = other;
@@ -413,7 +414,7 @@ void BoneController::LookAt(FVector TargetLocation)
 		FVector forward = ownOrientation.lookDirXForward().GetSafeNormal();
 		float dotProduct = FVector::DotProduct(forward, connect);
 
-		if(dotProduct >= 0.9f){
+		if(dotProduct >= 0.99f){
 			ALIGNHIP_FLAG = false;
 			rotationPending = false;
 			// DebugHelper::showScreenMessage("ROTATION ALREADY REACHED!");
@@ -426,21 +427,33 @@ void BoneController::LookAt(FVector TargetLocation)
 
 			float flip = forward.X * connect.Y - forward.Y * connect.X < 0.0f ? -1.0f : 1.0f;
 			float signedAngle = flip * MMatrix::radToDegree(std::acosf(dotProduct));
-
-			if(!leg1isPlaying){
-				legDoubleKeys_1.rotateNextFramesA(signedAngle);
-			}
-			else{
-				legDoubleKeys_2.rotateNextFramesA(signedAngle);
-			}
-			ALIGNHIP_FLAG = true;
-			return;
+			updateRotation(signedAngle);
 		}
-		return;
 	}
-
-	
 }
+
+void BoneController::updateRotation(float signedAngle){
+	if(ALIGNHIP_FLAG == false){
+		if(leg1isPlaying && legDoubleKeys_1.isAnimationA()){
+			legDoubleKeys_1.rotateNextFramesA(signedAngle);
+		}
+		if(!leg1isPlaying && legDoubleKeys_2.isAnimationA()){
+			legDoubleKeys_2.rotateNextFramesA(signedAngle);
+		}
+		ALIGNHIP_FLAG = true;
+		lookAtPendingAngle = signedAngle;
+	}
+}
+
+
+
+void BoneController::resetPendingRotationStatus(){
+	ALIGNHIP_FLAG = false;
+	lookAtPendingAngle = 0.0f;
+}
+
+
+
 
 void BoneController::overrideRotationYaw(float degree){
 	ownOrientation.yawRad(MMatrix::degToRadian(degree));
@@ -578,7 +591,7 @@ void BoneController::updateHipLocation(MMatrix &updatetHipJointMat, int limbinde
 void BoneController::updateHipLocationAndRotation(MMatrix &updatedStartingJointMat, int limbindex){
 	MMatrix offsetRaw = offsetInverseMatrixByLimb(limbindex);
 	MMatrix rotation = updatedStartingJointMat.extarctRotatorMatrix();
-	offsetRaw *= rotation;
+	offsetRaw *= rotation; //M = R * T <--lese richtung --
 
 	updatedStartingJointMat *= offsetRaw;
 	ownLocation.setTranslation(updatedStartingJointMat);
@@ -724,11 +737,7 @@ void BoneController::waitForLocomotionStopIfNeeded(){
 void BoneController::TickLocomotion(float DeltaTime){
 	//block motion auto adjust for new motion queue doing the job
 	if(ALIGNHIP_FLAG){
-		if(leg1isPlaying && legDoubleKeys_1.isAnimationB()){
-			TickHipAutoAlign(DeltaTime);
-			return;
-		}
-		if(!leg1isPlaying && legDoubleKeys_2.isAnimationB()){
+		if(legDoubleKeys_1.isAnimationB() || legDoubleKeys_2.isAnimationB()){
 			TickHipAutoAlign(DeltaTime);
 			return;
 		}
@@ -781,9 +790,14 @@ void BoneController::TickLocomotion(float DeltaTime){
 
 //leg only for now!
 void BoneController::TickHipAutoAlign(float DeltaTime){
-
 	
 
+	//tick legs
+	buildRawAndKeepEndInPlace(leg1, ownLocationFoot1, DeltaTime, leg1Color, FOOT_1);
+	buildRawAndKeepEndInPlace(leg2, ownLocationFoot2, DeltaTime, leg2Color, FOOT_2);
+	
+
+	//build
 	int index = leg1isPlaying ? FOOT_1 : FOOT_2;
 	MMatrix *end = findEndEffector(index);
 	TwoBone *bone = findBone(index);
@@ -797,13 +811,9 @@ void BoneController::TickHipAutoAlign(float DeltaTime){
 			garivityVec = legDoubleKeys_2.getProjectionOffsetTimed(DeltaTime, end->getTranslation());
 		}
 
-
-
-		FVector updatePos = end->getTranslation() + garivityVec;
-		end->setTranslation(updatePos);
-
-		FVector updateLocation = ownLocation.getTranslation() + garivityVec;
-		ownLocation.setTranslation(updateLocation);
+		//operator is overloaded
+		*end += garivityVec;
+		ownLocation += garivityVec;
 
 		MMatrix jointStart = currentTransform(index);
 
@@ -815,53 +825,39 @@ void BoneController::TickHipAutoAlign(float DeltaTime){
 			*end,
 			*bone,
 			DeltaTime,
+			lookAtPendingAngle,
 			GetWorld(),
 			reachedHipTargetAutoAdjust
 		);
-		/*
-		//actor dreht sich nicht von alleine, drehen!
-		FRotator r = update.extractRotator();
-		ownOrientation.setRotation(r);
 
-		//update location
-		updateHipLocation(update, index);*/
-		updateHipLocationAndRotation(update, index); 
+		if(!reachedHipTargetAutoAdjust)
+			updateHipLocationAndRotation(update, index); 
 
 		if(reachedHipTargetAutoAdjust){
-
-			DebugHelper::showScreenMessage("reached rotation!");
-
-			/**
-			 * was man prüfen muss:
-			 * ob alle rotationen der frames im anschluss auch zurück gesetezt
-			 * werden damit es nicht doppelt passiert
-			 *
-			 */
-
+			
 			//stop anim.
-			ALIGNHIP_FLAG = false;
+			//ALIGNHIP_FLAG = false;
+			resetPendingRotationStatus();
 
-			legDoubleKeys_1.setToA();
-			legDoubleKeys_2.setToA();
+			legDoubleKeys_1.resetAnimationToStartAndResetRotation();
+			legDoubleKeys_2.resetAnimationToStartAndResetRotation();
 
 			//leg 1 reached, 2 update just as default walking
 			if(leg1isPlaying){
+				leg1isPlaying = false;
 				FVector footPos = ownLocationFoot2.getTranslation();
 				transformFromWorldToLocalCoordinates(footPos, FOOT_2);
 				legDoubleKeys_2.overrideCurrentStartingFrame(footPos);
 			}else{
+				leg1isPlaying = true;
 				FVector footPos = ownLocationFoot1.getTranslation();
 				transformFromWorldToLocalCoordinates(footPos, FOOT_1);
 				legDoubleKeys_1.overrideCurrentStartingFrame(footPos);
 			}
-			leg1isPlaying = !leg1isPlaying;
 			return;
 		}
 	}
 
-	//tick legs
-	buildRawAndKeepEndInPlace(leg1, ownLocationFoot1, DeltaTime, leg1Color, FOOT_1);
-	buildRawAndKeepEndInPlace(leg2, ownLocationFoot2, DeltaTime, leg2Color, FOOT_2);
 	
 }
 

@@ -281,8 +281,8 @@ MMatrix MotionQueue::TickUpdatedHipMoveAlignMatrix(
 
     if(reached(jointStartWorld, jointTargetWorld)){
         if(isParalel(orientation, direction)){
-            hipTransitioning = false;
             reachedFlag = true;
+            resetHipInterpolatorAndFlags();
             return hipJointMatStartRotated;
         }
         
@@ -307,33 +307,130 @@ MMatrix MotionQueue::TickUpdatedHipMoveAlignMatrix(
             orientationRotated,
             0.5f
         );
+
+        DebugHelper::showLineBetween(
+            world,
+            jointStartWorld,
+            jointTargetWorld,
+            FColor::Orange,
+            1.0f
+        );
     }
-    if(hipTransitioning){
+    
+    MMatrix newHipOffsetted = hipInterpolator.interpolateAndGenerateTransform(DeltaTime);
 
-        FRotator newRotation;
-        FVector posWorldHip = hipInterpolator.interpolate(DeltaTime, newRotation); //interpoliert immer in local space
+    DebugHelper::showLineBetween(
+        world,
+        newHipOffsetted.getTranslation(),
+        newHipOffsetted.getTranslation() + FVector(0,0,50),
+        FColor::Purple,
+        1.0f
+    );
 
-        MMatrix newHipOffsetted;
-        newHipOffsetted.setRotation(newRotation);
-        newHipOffsetted.setTranslation(posWorldHip);
-
-        if(hipInterpolator.hasReachedTarget()){
-            reachedFlag = true;
-            setupHipTarget = false;
-            hipTransitioning = false; //update transit flag
-            hipInterpolator.setNewTimeToFrame(0.5f);
-        }
-        return newHipOffsetted;
+    if(hipInterpolator.hasReachedTarget()){
+        reachedFlag = true;
+        resetHipInterpolatorAndFlags();
     }
-
-    //wenn nicht in transit ist das target reached!
-    return hipJointMatStartRotated;
+    return newHipOffsetted;
 
 
 
 }
 
 
+
+
+
+
+
+
+MMatrix MotionQueue::TickUpdatedHipMoveAlignMatrix(
+    MMatrix &hipJointMatStartRotated,
+    MMatrix &orientation,
+    MMatrix &endEffector,
+    TwoBone &bone1,
+    float DeltaTime,
+    float signedYawAngleAddedToFrames,
+    UWorld *world,
+    bool &reachedFlag
+){
+    FVector targetRelativeToEnd = bone1.startRelativeToEnd_Initial();
+    FVector jointStartWorld = hipJointMatStartRotated.getTranslation();
+    FVector jointTargetWorld = endEffector.getTranslation() + targetRelativeToEnd;
+    //direction of hip to target
+    FVector direction = jointTargetWorld - jointStartWorld;
+
+    if(reached(jointStartWorld, jointTargetWorld)){
+        if(std::abs(signedYawAngleAddedToFrames) <= 0.001f){
+            reachedFlag = true;
+            resetHipInterpolatorAndFlags();
+            return hipJointMatStartRotated;
+        }
+        
+    }
+
+    reachedFlag = false;
+    hipTransitioning = true;
+    if(!setupHipTarget){
+        FRotator orientationExtracted = orientation.extractRotator();
+        FRotator orientationRotated = orientationExtracted;
+        orientationRotated.Yaw += signedYawAngleAddedToFrames;
+
+        setupHipTarget = true;
+        //might bring here joint start and end to actor system
+        hipInterpolator.setTarget(
+            jointStartWorld,
+            jointTargetWorld,
+            orientationExtracted,
+            orientationRotated,
+            0.5f
+        );
+
+        DebugHelper::showLineBetween(
+            world,
+            jointStartWorld,
+            jointTargetWorld,
+            FColor::Orange,
+            1.0f
+        );
+    }
+    
+    MMatrix newHipOffsetted = hipInterpolator.interpolateAndGenerateTransform(DeltaTime);
+
+    DebugHelper::showLineBetween(
+        world,
+        newHipOffsetted.getTranslation(),
+        newHipOffsetted.getTranslation() + FVector(0,0,50),
+        FColor::Purple,
+        1.0f
+    );
+
+    if(hipInterpolator.hasReachedTarget()){
+        reachedFlag = true;
+        resetHipInterpolatorAndFlags();
+    }
+    return newHipOffsetted;
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+/// @brief resets all target flags and sets the reached flag to true
+void MotionQueue::resetHipInterpolatorAndFlags(){
+    setupHipTarget = false;
+    hipTransitioning = false; //update transit flag
+    hipInterpolator.setNewTimeToFrame(0.5f);
+}
 
 
 
@@ -343,7 +440,7 @@ bool MotionQueue::hipInTransit(){
 }
 
 bool MotionQueue::reached(FVector &a, FVector &b){
-    return FVector::Dist(a, b) <= 2.0f;
+    return FVector::Dist(a, b) <= 1.0f;
 }
 
 bool MotionQueue::isParalel(MMatrix &orientation, FVector directionOfEndEffector){
@@ -353,8 +450,9 @@ bool MotionQueue::isParalel(MMatrix &orientation, FVector directionOfEndEffector
     directionOfEndEffector.Z = 0.0f;
     forward.Z = 0.0f;
 
-    return std::abs(FVector::DotProduct(forward, directionOfEndEffector)) > 0.9f;
+    return std::abs(FVector::DotProduct(forward, directionOfEndEffector)) >= 0.99f;
 }
+
 
 float MotionQueue::signedYawAngle(MMatrix &actorWorld, FVector actorComToEndEffector){
     FVector lookDir = actorWorld.lookDirXForward().GetSafeNormal();
@@ -369,24 +467,4 @@ float MotionQueue::signedYawAngle(MMatrix &actorWorld, FVector actorComToEndEffe
 
     float angle = MMatrix::radToDegree(std::acosf(dotproduct)) * sign;
     return angle;
-}
-
-void MotionQueue::updateHipLocation(
-    MMatrix &actorMatTranslation, 
-    MMatrix actorRotationInv,
-    MMatrix &updatetHipJointMat, 
-    MMatrix &hipJointMatLocal
-){
-    
-    //ich habe meinen joint geändert
-    //und möchte jetzt meine hip dazu bewegen
-    //ich nehme die joint start world matrix und rechne die locale inverse drauf
-    //damit ich die aktualisierte actor matrix com erhalte
-    MMatrix inverseTranslation = hipJointMatLocal.jordanInverse();
-    actorRotationInv.invertRotation();
-    MMatrix hipWorldNew = updatetHipJointMat * inverseTranslation;
-    //actorMatTranslation = hipWorldNew;
-
-    FVector updatePos = hipWorldNew.getTranslation();
-    actorMatTranslation.setTranslation(updatePos);
 }

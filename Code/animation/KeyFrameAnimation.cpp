@@ -136,9 +136,8 @@ void KeyFrameAnimation::updateFrameIndex(){
         nextFrameIndex = 1;
         //DebugHelper::showScreenMessage("reached end frame!", FColor::Orange);
         reachedEndFrameFlag = true;
-
-
-
+    }
+    if(isEnd){
         //reset rotation!
         resetRotationOnFramesFlag();
     }
@@ -161,13 +160,33 @@ void KeyFrameAnimation::updateFrameInterpolator(){
     interpolator.setTarget(
         currentFramePosition, //currentFrame.readposition();
         nextFrame.readposition(),
-        nextFrame.readVelocity()
+        nextFrame.readTimeToFrame()
     );
 
     //reset frame projected status
     frameIsProjected = false;
 }
 
+void KeyFrameAnimation::resetAnimationToStartAndResetRotation(){
+    if(hasAnyFrames()){
+        frameIndex = 0;
+        nextFrameIndex = 1;
+        
+        KeyFrame &currentFrame = frames.at(frameIndex);
+        KeyFrame &nextFrame = frames.at(nextFrameIndex);
+        FVector currentFramePosition = currentFrame.readposition();
+
+        interpolator.setTarget(
+            currentFramePosition, //currentFrame.readposition();
+            nextFrame.readposition(),
+            nextFrame.readTimeToFrame()
+        );
+
+        //reset frame projected status
+        frameIsProjected = false;
+    }
+    resetRotationOnFramesFlag();
+}
 
 /// @brief will tell if the next key frame must be grounded or not
 /// @return must be grounded
@@ -414,7 +433,8 @@ void KeyFrameAnimation::rotateNextFrames(float signedAngleYawDegree){
     }
     rotateFramesBasedOnAngle = true;
     rotateFramesMatrix.resetRotation();
-    rotateFramesMatrix.yawRad(MMatrix::degToRadian(signedAngleYawDegree));
+    rotateFramesMatrix.yawRadAdd(MMatrix::degToRadian(signedAngleYawDegree));
+    rotateFramesMatrix.setTranslation(0, 0, 0);
 }
 
 void KeyFrameAnimation::resetRotationOnFramesFlag(){

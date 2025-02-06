@@ -124,6 +124,18 @@ void AIkActor::Tick(float DeltaTime)
 	hipController.Tick(DeltaTime, GetWorld());
 	SetActorLocation(hipController.GetLocation());
 	//rotation muss auch noch kopiert werden
+
+	debugDeltaTimeTrigger += DeltaTime;
+	if (debugDeltaTimeTrigger > 5.0f)
+	{
+		debugFunction();
+		debugDeltaTimeTrigger = 0.0f;
+	}
+}
+
+
+void AIkActor::debugFunction(){
+	hipController.updateRotation(90.0f);
 }
 
 /// @brief look at a location

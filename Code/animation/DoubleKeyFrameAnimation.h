@@ -57,6 +57,8 @@ public:
 
 	void forceRefreshTarget(FrameProjectContainer &container);
 
+	void resetAnimationToStartAndResetRotation();
+
 private:
 	class GravityInterpolator gravityInterpolator;
 
@@ -101,9 +103,6 @@ private:
 	FVector latestWorldProjectedFrame;
 
 	void updateInterpolatorB(FVector reachedA);
-
-	//new
-	bool rotationRequested = false; //must be set to false once framesA finishes playing
 
 public:
 	void setRunning(bool b);

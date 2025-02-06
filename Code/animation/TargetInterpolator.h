@@ -48,6 +48,8 @@ public:
 	FVector interpolate(float DeltaTime);
 	FVector interpolate(float DeltaTime, FRotator &rotationOutgoing);
 	FRotator interpolateRotationOnly(float DeltaTime);
+	MMatrix interpolateAndGenerateTransform(float DeltaTime);
+	
 
 	static FRotator interpolationRotation(FRotator fromIn, FRotator toIn, float skalar);
 	static FVector interpolation(FVector from, FVector to, float skalar);

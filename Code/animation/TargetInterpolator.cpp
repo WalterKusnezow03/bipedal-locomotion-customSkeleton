@@ -242,6 +242,15 @@ FVector TargetInterpolator::interpolate(float DeltaTime, FRotator &rotationOutgo
     return outpos;
 }
 
+MMatrix TargetInterpolator::interpolateAndGenerateTransform(float DeltaTime){
+    MMatrix outMatrix;
+    FRotator rotatorOut;
+    FVector pos = interpolate(DeltaTime, rotatorOut);
+    outMatrix.setRotation(rotatorOut);
+    outMatrix.setTranslation(pos);
+    return outMatrix;
+}
+
 float TargetInterpolator::skalar(){
     //hier muss ein epsilon value sein!
     //1 / 0 = unendlich

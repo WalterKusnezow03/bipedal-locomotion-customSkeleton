@@ -83,17 +83,25 @@ public:
 		bool &reachedFlag
 	);
 
+	//new!
+	MMatrix TickUpdatedHipMoveAlignMatrix(
+		MMatrix &hipJointMatStartRotated,
+		MMatrix &orientation,
+		MMatrix &endEffector,
+		TwoBone &bone1,
+		float DeltaTime,
+		float signedYawAngleAddedToFrames,
+		UWorld *world,
+		bool &reachedFlag
+	);
+
 private:
 	class TargetInterpolator hipInterpolator;
 	bool hipTransitioning = false;
 	bool setupHipTarget = false;
 
-	void updateHipLocation(
-		MMatrix &actorMatTranslation, 
-    	MMatrix actorRotationInv,
-    	MMatrix &updatetHipJointMat, 
-    	MMatrix &hipJointMatLocal
-	);
+	void resetHipInterpolatorAndFlags();
+
 	float signedYawAngle(MMatrix &actorWorld, FVector actorComToEndEffector);
 
 	bool isParalel(MMatrix &orientation, FVector directionOfEndEffector);

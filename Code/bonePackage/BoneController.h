@@ -36,7 +36,7 @@ public:
 	void SetLocation(FVector &vector);
 	FVector GetLocation();
 	void LookAt(FVector TargetLocation);
-	
+	void updateRotation(float addDegreeYaw);
 
 	MMatrix currentTransform();
 
@@ -63,7 +63,10 @@ public:
 	
 	
 private:
+	void resetPendingRotationStatus();
+	float lookAtPendingAngle = 0.0f;
 	FVector latestLookAtDirection;
+
 	bool isANewLookDirection(FVector &other);
 
 	bool isWaitingForAnimStop = false;

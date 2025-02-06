@@ -49,6 +49,6 @@ private:
 
 	AActor *createLimbPivotAtTop(int x, int y, int height, int offsetY);
 
-
-
+	float debugDeltaTimeTrigger = 0.0f;
+	void debugFunction();
 };

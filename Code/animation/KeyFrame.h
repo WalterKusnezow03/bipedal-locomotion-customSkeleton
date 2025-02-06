@@ -10,18 +10,18 @@
 class P2_API KeyFrame
 {
 public:
-	KeyFrame(FVector positionIn, float velocityIn);
-	KeyFrame(FVector positionIn, float velocityIn, bool groundedIn);
+	KeyFrame(FVector positionIn, float timeToFrameIn);
+	KeyFrame(FVector positionIn, float timeToFrameIn, bool groundedIn);
 	~KeyFrame();
 
 	FVector readposition();
-	float readVelocity();
+	float readTimeToFrame();
 	bool mustBeGrounded();
 
-	void setVelocity(float velocityIn);
+	void setTimeToFrame(float timeToFrameIn);
 
 private:
 	FVector position;
-	float velocity;
+	float timeToFrame;
 	bool grounded = false;
 };
