@@ -63,18 +63,15 @@ public:
 	void transformFromWorldToLocalCoordinates(FVector &position);
 
 	void invertRotation();
-	
+
+
 private:
-	
-
-
 	//16 langes array für die 4x4 matrix
 	static constexpr int size = 16;
 	float array[16];
 
+	float clampDivisionByZero(float value);
 
-	
-	
 	void swapIndices(int a, int b);
 
 

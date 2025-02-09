@@ -32,7 +32,8 @@ void AIkActor::BeginPlay()
 
 	
 	//testing rotation
-	hipController.overrideRotationYaw(60);
+	//hipController.overrideRotationYaw(-89.9f); //-90 anim bug!
+	hipController.overrideRotationYaw(-90.0f); //close to -90 (-89.9999f)anim bug! bei
 	weaponPointer = nullptr;
 	hipController.setStateWalking();
 	getWeaponOnStart();
@@ -112,7 +113,12 @@ void AIkActor::BeginPlay()
 	AActor *oberarm_1 = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, offY);
 	AActor *unterarm_1 = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, offY);
 	hipController.attachLimbMeshes(oberarm_1, unterarm_1, 4); //hand 2 debug
-	
+
+
+
+	AActor *foot1 = createLimbPivotAtTop(20, 10, 10, 0);
+	AActor *foot2 = createLimbPivotAtTop(20, 10, 10, 0);
+	hipController.attachPedalFoots(foot1, foot2);
 }
 
 // Called every frame
@@ -126,7 +132,7 @@ void AIkActor::Tick(float DeltaTime)
 	//rotation muss auch noch kopiert werden
 
 	debugDeltaTimeTrigger += DeltaTime;
-	if (debugDeltaTimeTrigger > 5.0f)
+	if (debugDeltaTimeTrigger > 10.0f)
 	{
 		debugFunction();
 		debugDeltaTimeTrigger = 0.0f;
@@ -135,7 +141,8 @@ void AIkActor::Tick(float DeltaTime)
 
 
 void AIkActor::debugFunction(){
-	hipController.updateRotation(90.0f);
+	return;
+	hipController.updateRotation(-45.0f);
 }
 
 /// @brief look at a location

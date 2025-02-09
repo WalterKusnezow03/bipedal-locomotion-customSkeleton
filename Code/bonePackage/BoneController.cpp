@@ -323,6 +323,10 @@ void BoneController::setupAnimation(){
 }
 
 
+/// @brief attach limb meshes: top and bottom part of bone
+/// @param top 
+/// @param bottom 
+/// @param index 
 void BoneController::attachLimbMeshes(AActor *top, AActor *bottom, int index){
 	TwoBone *bone = findBone(index);
 	if(bone != nullptr){
@@ -336,6 +340,21 @@ void BoneController::attachLimbMeshes(AActor *top, AActor *bottom, int index){
 		}	
 	}
 }
+
+
+void BoneController::attachPedalFoots(AActor *left, AActor *right){
+	TwoBone *leftBone = findBone(FOOT_1);
+	if(leftBone != nullptr && left != nullptr){
+		left->SetActorEnableCollision(false);
+		leftBone->attachThirdLimb(*left);
+	}
+	TwoBone *rightBone = findBone(FOOT_2);
+	if(rightBone != nullptr && right != nullptr){
+		right->SetActorEnableCollision(false);
+		rightBone->attachThirdLimb(*right);
+	}
+}
+
 
 void BoneController::attachTorso(AActor *torsoPointerIn){
 	if(torsoPointerIn != nullptr){
@@ -442,6 +461,8 @@ void BoneController::updateRotation(float signedAngle){
 		}
 		ALIGNHIP_FLAG = true;
 		lookAtPendingAngle = signedAngle;
+
+		DebugHelper::showScreenMessage("new rotation", lookAtPendingAngle);
 	}
 }
 
@@ -456,7 +477,8 @@ void BoneController::resetPendingRotationStatus(){
 
 
 void BoneController::overrideRotationYaw(float degree){
-	ownOrientation.yawRad(MMatrix::degToRadian(degree));
+	ownOrientation.resetRotation();
+	ownOrientation.yawRadAdd(MMatrix::degToRadian(degree));
 }
 
 /// @brief method to attach a carried item to the hands of the actor
@@ -790,7 +812,10 @@ void BoneController::TickLocomotion(float DeltaTime){
 
 //leg only for now!
 void BoneController::TickHipAutoAlign(float DeltaTime){
-	
+
+	if(!ALIGNHIP_FLAG){
+		return;
+	}
 
 	//tick legs
 	buildRawAndKeepEndInPlace(leg1, ownLocationFoot1, DeltaTime, leg1Color, FOOT_1);
@@ -834,7 +859,9 @@ void BoneController::TickHipAutoAlign(float DeltaTime){
 			updateHipLocationAndRotation(update, index); 
 
 		if(reachedHipTargetAutoAdjust){
-			
+
+			DebugHelper::showScreenMessage("new rotation reached");
+
 			//stop anim.
 			//ALIGNHIP_FLAG = false;
 			resetPendingRotationStatus();
@@ -842,18 +869,21 @@ void BoneController::TickHipAutoAlign(float DeltaTime){
 			legDoubleKeys_1.resetAnimationToStartAndResetRotation();
 			legDoubleKeys_2.resetAnimationToStartAndResetRotation();
 
+
+			//das hier auszukommentieren, bringt nichts beim bug wo die end limbs so rumglitchen
+			//auf 90 grad dings.
 			//leg 1 reached, 2 update just as default walking
 			if(leg1isPlaying){
-				leg1isPlaying = false;
 				FVector footPos = ownLocationFoot2.getTranslation();
 				transformFromWorldToLocalCoordinates(footPos, FOOT_2);
 				legDoubleKeys_2.overrideCurrentStartingFrame(footPos);
 			}else{
-				leg1isPlaying = true;
 				FVector footPos = ownLocationFoot1.getTranslation();
 				transformFromWorldToLocalCoordinates(footPos, FOOT_1);
 				legDoubleKeys_1.overrideCurrentStartingFrame(footPos);
 			}
+
+			leg1isPlaying = !leg1isPlaying;
 			return;
 		}
 	}

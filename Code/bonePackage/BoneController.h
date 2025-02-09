@@ -47,6 +47,7 @@ public:
 	//attach meshes
 	void attachLimbMeshes(AActor *top, AActor *bottom, int index);
 	void attachTorso(AActor *torsoPointer);
+	void attachPedalFoots(AActor *left, AActor *right);
 
 	//movement and item interaction set state
 	void setStateWalking();

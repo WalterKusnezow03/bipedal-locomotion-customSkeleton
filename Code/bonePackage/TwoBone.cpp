@@ -223,11 +223,11 @@ void TwoBone::createEthaPitchAnglesFor(
     gamma = MMatrix::degToRadian(180 - std::abs(MMatrix::radToDegree(gamma)));
     secondOutput = gamma;
 
-    FString debugAngleString = FString::Printf(
+    /*FString debugAngleString = FString::Printf(
         TEXT("AngleDebug alpha HIP %.2f, gamma KNEE %.2f"),
         MMatrix::radToDegree(alpha),
         MMatrix::radToDegree(gamma)
-    );
+    );*/
    
 
 }
@@ -343,14 +343,17 @@ void TwoBone::rotateEndToTarget(
     }
 
     // --- KNICK BASIS ---
-     
+    /*
     //distance to etha: (remember, here: 0 is extended, 1 is fully to hip, 180 deg angle)
-    float etha = createEthaFromDistance(distance);
+    //float etha = createEthaFromDistance(distance);
     
     float angle = angleFromEtha(etha);
     float hipAngle = createHipAngle(angle);
     float kneeAngle = createKneeAngle(angle);
+    */
 
+    float hipAngle = 0.0f;
+    float kneeAngle = 0.0f;
 
     //ATTENTION: NEW TESTING COS SATZ!
     createEthaPitchAnglesFor(
@@ -370,9 +373,9 @@ void TwoBone::rotateEndToTarget(
     //anhand des wights dann knicken flippen
     //also -x oder -z sorgen für einen invertierten knick
     if(
-        (weight.X < 0 || weight.Z < 0) 
+        (weight.X < 0.0f || weight.Z < 0.0f) 
         && //wenn gewicht negativ
-        hipAngle < 0                      //und knick noch nach vorne (default) (insgesamt ein gegensatz)
+        hipAngle < 0.0f  //angle zeigt grade nach vorne
     ){ 
         //both angles flip based on weight direction 
         hipAngle *= -1;

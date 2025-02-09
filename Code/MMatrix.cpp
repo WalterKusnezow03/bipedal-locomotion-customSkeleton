@@ -252,12 +252,10 @@ void MMatrix::yawRad(float a){
     float sin = std::sin(a);
 
     array[0] = cos;
+    array[1] = sin * -1;
     array[5] = cos;
     array[4] = sin;
-    array[1] = sin * -1;
 }
-
-
 
 /**
  * 
@@ -385,24 +383,6 @@ MMatrix MMatrix::createRotatorFrom(FRotator &other){
 /// @param other 
 void MMatrix::rotate(MMatrix &other){
     
-    //Rges = R2 * R1 wenn Rges angewand werden soll und r1 als erstes angewandt
-    /*
-    MMatrix result; // Temporary matrix to store the result
-
-    int limit = 3;
-
-    for (int row = 0; row < limit; row++) { // Iterate through the rows of 'this' matrix
-        for (int col = 0; col < limit; col++) { // Iterate through the columns of 'other' matrix
-            
-            float sum = 0.0f;
-            for (int inner = 0; inner < limit; inner++) { 
-                sum += other.array[row * 4 + inner] * array[inner * 4 + col];
-            }
-            result.array[row * 4 + col] = sum; // Store the result in the temporary matrix
-        }
-    }*/
-
-
     MMatrix result; 
     for (int col = 0; col < 3; col++){
         for (int row = 0; row < 3; row++){
@@ -705,7 +685,8 @@ MMatrix MMatrix::jordanInverse(){
     // das ist am ende die inverse
 
     for (int x = 0; x < 4; x++){
-        
+
+        /*
         //durch pivot teilen dass 1 in pivot
         float devide = thisMatrix.get(x, x); //sollte das skallierungs element (sX, sY, sZ) = 0 sein
         //ist die matrix natürlich nicht invertierbar!!
@@ -713,8 +694,10 @@ MMatrix MMatrix::jordanInverse(){
             DebugHelper::logMessage("debug identitydebug MATRIX NICHT INVERTIERBAR");
             MMatrix cleanMatrix;
             return cleanMatrix;
-        }
-        thisMatrix.scaleRow(x, (1.0f / devide)); //d * 1 / d = 1, skallieren pivot.
+        }*/
+
+        float devide = clampDivisionByZero(thisMatrix.get(x, x));
+        thisMatrix.scaleRow(x, (1.0f / devide)); // d * 1 / d = 1, skallieren pivot.
         identity.scaleRow(x, (1.0f / devide));
 
         //darunter wandern, elemente eliminieren
@@ -738,7 +721,6 @@ MMatrix MMatrix::jordanInverse(){
         }
     }
 
-    //das verstehe ich noch nicht
     // Eliminate elements above the pivots (new part)
     for (int x = 3; x >= 0; x--) {
         for (int y = x - 1; y >= 0; y--) {
@@ -749,21 +731,39 @@ MMatrix MMatrix::jordanInverse(){
     }
     
 
-    //FString message = FString::Printf(TEXT("debug inverse:"));
-	//message += identity.asString();
-    //DebugHelper::logMessage(message);
+    FString message = FString::Printf(TEXT("debug inverse:"));
+	message += identity.asString();
+    DebugHelper::logMessage(message);
 
     return identity;
 }
+
+/// @brief a very dangerous fix to let the matrix be invertable. Does introduce numeric
+/// inaccuracy
+/// THIS VALUES ARE TESTED FOR THE BONECONTROLLER AND SEEMS TO WORK OK! DO NOT CHANGE!
+/// @param other 
+/// @return 
+float MMatrix::clampDivisionByZero(float other){
+    if(std::abs(other) <= 0.000001f){
+        return 0.00001f;
+    }
+    return other;
+}
+
 
 /// @brief scales a row with a factor 
 /// @param row row to scale
 /// @param scale faktor
 void MMatrix::scaleRow(int row, float scale){
-    int start = row * 4;
+    /*int start = row * 4;
     int end = (row + 1) * 4;
     for (int i = start; i < end; i++){
         array[i] *= scale;
+    }*/
+
+    for (int i = 0; i < 4; i++){
+        float val = get(i, row) * scale;
+        set(i, row, val);
     }
 }
 
@@ -772,11 +772,19 @@ void MMatrix::scaleRow(int row, float scale){
 /// @param otherRow subtract this row
 /// @param faktor faktor of otherRow 
 void MMatrix::minusForRow(int row, int otherRow, float faktor) {
+
+    for (int i = 0; i < 4; i++){
+        float otherValueScaled = get(i, otherRow) * faktor;
+        float thisValue = get(i, row) - otherValueScaled;
+        set(i, row, thisValue);
+    }
+
+    /*
     int startRow = row * 4;
     int startOtherRow = otherRow * 4;
     for (int i = 0; i < 4; i++) {
         array[startRow + i] -= faktor * array[startOtherRow + i];
-    }
+    }*/
 }
 
 
