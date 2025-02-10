@@ -352,7 +352,8 @@ MMatrix MotionQueue::TickUpdatedHipMoveAlignMatrix(
     float DeltaTime,
     float signedYawAngleAddedToFrames,
     UWorld *world,
-    bool &reachedFlag
+    bool &reachedFlag,
+    float velocityOfMovement
 ){
     FVector targetRelativeToEnd = bone1.startRelativeToEnd_Initial();
     FVector jointStartWorld = hipJointMatStartRotated.getTranslation();
@@ -377,22 +378,29 @@ MMatrix MotionQueue::TickUpdatedHipMoveAlignMatrix(
         orientationRotated.Yaw += signedYawAngleAddedToFrames;
 
         setupHipTarget = true;
-        //might bring here joint start and end to actor system
+
+        /*
+         * equation solve for s:
+         * 
+         * m/s = m/s
+         * v = dist / s
+         * s = dist / v
+         *  
+         */
+
+        float dist = FVector::Dist(jointStartWorld, jointTargetWorld);
+        velocityOfMovement = std::max(std::abs(velocityOfMovement), 0.01f);
+        float timeToFrame = dist / velocityOfMovement;
+
         hipInterpolator.setTarget(
             jointStartWorld,
             jointTargetWorld,
             orientationExtracted,
             orientationRotated,
-            0.5f
+            timeToFrame//0.3f
         );
 
-        DebugHelper::showLineBetween(
-            world,
-            jointStartWorld,
-            jointTargetWorld,
-            FColor::Orange,
-            1.0f
-        );
+        
     }
     
     MMatrix newHipOffsetted = hipInterpolator.interpolateAndGenerateTransform(DeltaTime);

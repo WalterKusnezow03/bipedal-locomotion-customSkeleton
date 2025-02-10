@@ -731,9 +731,11 @@ MMatrix MMatrix::jordanInverse(){
     }
     
 
+    /*
     FString message = FString::Printf(TEXT("debug inverse:"));
 	message += identity.asString();
     DebugHelper::logMessage(message);
+    */
 
     return identity;
 }
@@ -741,8 +743,8 @@ MMatrix MMatrix::jordanInverse(){
 /// @brief a very dangerous fix to let the matrix be invertable. Does introduce numeric
 /// inaccuracy
 /// THIS VALUES ARE TESTED FOR THE BONECONTROLLER AND SEEMS TO WORK OK! DO NOT CHANGE!
-/// @param other 
-/// @return 
+/// @param other value to check
+/// @return value to allow invertion of the matrix with jordan gauß verfahren
 float MMatrix::clampDivisionByZero(float other){
     if(std::abs(other) <= 0.000001f){
         return 0.00001f;

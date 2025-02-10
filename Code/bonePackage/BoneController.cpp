@@ -852,7 +852,8 @@ void BoneController::TickHipAutoAlign(float DeltaTime){
 			DeltaTime,
 			lookAtPendingAngle,
 			GetWorld(),
-			reachedHipTargetAutoAdjust
+			reachedHipTargetAutoAdjust,
+			200.0f //2m/s
 		);
 
 		if(!reachedHipTargetAutoAdjust)
@@ -1160,7 +1161,7 @@ void BoneController::buildRawAndKeepEndInPlace(
 	build leg raw
 
 	ziel hier: 
-	von hier das bein so rendern das bein am originalen punkt bleibt
+	build sodass von hier das bein am originalen punkt bleibt
 	das foot transform muss also zu einem target umgewandelt werden
 	und dann dort hin bewegt. Egal ob was neu berechnet wird oder nicht
 	*/
@@ -1169,7 +1170,9 @@ void BoneController::buildRawAndKeepEndInPlace(
 	
 	FVector pos = legEndTransform.getTranslation();
     MMatrix currenttransform = currentTransform(leg);
-	currenttransform.transformFromWorldToLocalCoordinates(pos); //relativ zur hüfte neu berechnen, auchwenn hüfte sich bewegt!
+
+	//relativ zur hüfte neu berechnen, auchwenn hüfte sich bewegt!
+	currenttransform.transformFromWorldToLocalCoordinates(pos); 
 
 	boneIk.rotateEndToTargetAndBuild(
 		GetWorld(),
@@ -1249,32 +1252,6 @@ void BoneController::playForwardKinematicAnim(
 
 	FVector thisAdd = container.getLookDir() * container.getVelocity() * DeltaTime;
 	ownLocation += thisAdd;
-
-
-	//old
-	/*
-
-	MMatrix current = currentTransform(leg); //based on leg transform
-	
-	float velocityT = addVelocityBasedOnState(); 
-    FVector lookDir = currentTransform().lookDirXForward();
-	lookDir.Z = 0.0f; //xy pane only of interest
-
-
-	frames.projectNextFrameIfNeeded(
-		GetWorld(),
-		current,
-		velocityT,
-		lookDir,
-		switchToClimbLocomotion, // boolean by reference, switch needed or not
-		armScaleCM,				 // max height
-		currentMotionState
-	);
-
-	//running velocity
-	FVector thisAdd = lookDir * velocityT * DeltaTime;
-	ownLocation += thisAdd; */
-	
 
 
 	//override motion state if needed

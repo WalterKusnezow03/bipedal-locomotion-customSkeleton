@@ -92,7 +92,8 @@ public:
 		float DeltaTime,
 		float signedYawAngleAddedToFrames,
 		UWorld *world,
-		bool &reachedFlag
+		bool &reachedFlag,
+		float velocityOfMovement
 	);
 
 private:

@@ -318,7 +318,8 @@ void TwoBone::rotateEndToTarget(
     end.resetRotation();
 
     /**
-     * TESTING FURTHER NEEDED
+     * Top view yaw rotation of weight
+     * 
      * gewicht ziegt ja irgendwo in zy pane und dann wird die bein achse (um -z) gespinnt.
      */
     //testing needed
@@ -409,26 +410,6 @@ void TwoBone::rotateEndToTarget(
     start.pitchRadAdd(globalSideAdd);
     
 
-
-
-    //FString anglePrint = FString::Printf(TEXT("angle: %.1f"), MMatrix::radToDegree(globalSideAdd));
-    //DebugHelper::showScreenMessage(anglePrint,vec, FColor::Orange);
-
-    /**
-     * --- global yaw top view ---
-     * 
-     * obere perspektive, wo muss das bein hinrotiert werden von oben gesehen
-     */
-
-    // prevent bugs with Z rotation, just lock if Y not set to any direction
-    bool isSideWayTarget = (std::abs(vec.Y) >= 0.1f); //statt != 0.0f ALWAYS USE EPSILON
-    if (isSideWayTarget == false){
-        return;
-    }
-
-    //GOLBAL ROTATION ON YAW only if Y is set!
-    float yawAngleTarget = yawAngleTo(vec);
-    start.yawRadAdd(yawAngleTarget);
 
 }
 
@@ -603,8 +584,8 @@ void TwoBone::rotateStartToTargetAndBuild( //works as expected
     FColor color,
     float displayTime
 ){
-    weight *= -1; //sonst falschrum, umdrehen weil rechnung umgedreht! nicht ändern, stimmt so
-
+    //weight *= -1;
+    weight.X *= -1; //sonst falschrum, umdrehen weil rechnung umgedreht! nicht ändern, stimmt so, X is Forward!
 
     std::vector<MMatrix *> matrizen;
 
@@ -910,11 +891,6 @@ MMatrix TwoBone::buildWithOutput(
 
 
     
-    /**
-     * neuer versuch mit extraction des rotators. 
-     * Was korrekt sein sollte
-     * aber bei eigen rotation nicht klappt um yaw. Scheinabr.
-     */
 
     //update bones based on matricies build
     for(int i = 0; i < resultMatricies.size(); i++){
@@ -930,12 +906,6 @@ MMatrix TwoBone::buildWithOutput(
 
     
 }
-
-
-
-
-
-
 
 
 

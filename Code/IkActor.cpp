@@ -141,7 +141,6 @@ void AIkActor::Tick(float DeltaTime)
 
 
 void AIkActor::debugFunction(){
-	return;
 	hipController.updateRotation(-45.0f);
 }
 
