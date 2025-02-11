@@ -73,15 +73,6 @@ public:
 
 	bool hipInTransit();
 
-	MMatrix TickUpdatedHipMoveAlignMatrix(
-		MMatrix &hipJointMatStartRotated,
-		MMatrix &orientation,
-		MMatrix &endEffector,
-		TwoBone &bone1,
-		float DeltaTime,
-		UWorld *world,
-		bool &reachedFlag
-	);
 
 	//new!
 	MMatrix TickUpdatedHipMoveAlignMatrix(
