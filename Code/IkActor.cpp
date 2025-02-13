@@ -82,17 +82,17 @@ void AIkActor::BeginPlay()
 	int offY = sizeY / 2;
 	offY = 0;
 
-	AActor *oberschenkel = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, offY);
-	AActor *unterschenkel = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, offY);
+	AActor *oberschenkel = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, 0);
+	AActor *unterschenkel = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, 0);
 	hipController.attachLimbMeshes(oberschenkel, unterschenkel, 1); //foot 1 debug
 	
-	AActor *oberschenkel_1 = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, -offY);
-	AActor *unterschenkel_1 = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, -offY);
+	AActor *oberschenkel_1 = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, 0);
+	AActor *unterschenkel_1 = createLimbPivotAtTop(sizeX, sizeY, legHalfScale, 0);
 	hipController.attachLimbMeshes(oberschenkel_1, unterschenkel_1, 2); //foot 2 debug
 
 	
-	AActor *oberarm = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, -offY);
-	AActor *unterarm = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, -offY);
+	AActor *oberarm = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, 0);
+	AActor *unterarm = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, 0);
 	hipController.attachLimbMeshes(oberarm, unterarm, 3); //hand 1 debug
 	
 
@@ -105,20 +105,25 @@ void AIkActor::BeginPlay()
 	 * oder eine eigene klasse existieren die diese detailierter
 	 * erstellen kann!
 	 */
-	AActor *torsoMesh = createLimbPivotAtTop(sizeX, sizeY * 4, -armScaleCM, -sizeY * 2.0f);
+	AActor *torsoMesh = createLimbPivotAtTop(sizeX, sizeY * 4, -armScaleCM, 0);
 	hipController.attachTorso(torsoMesh);
 
 
 	//holding weapon
-	AActor *oberarm_1 = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, offY);
-	AActor *unterarm_1 = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, offY);
+	AActor *oberarm_1 = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, 0);
+	AActor *unterarm_1 = createLimbPivotAtTop(sizeX, sizeY, armHalfScale, 0);
 	hipController.attachLimbMeshes(oberarm_1, unterarm_1, 4); //hand 2 debug
 
 
-
-	AActor *foot1 = createLimbPivotAtTop(20, 10, 10, 0);
-	AActor *foot2 = createLimbPivotAtTop(20, 10, 10, 0);
+	//foot
+	AActor *foot1 = createLimbPivotAtTop(20, 10, 10, 10);
+	AActor *foot2 = createLimbPivotAtTop(20, 10, 10, 10);
 	hipController.attachPedalFoots(foot1, foot2);
+
+
+	//head
+	AActor *headPointer = createLimbPivotAtTop(15, 20, -1 * 25, 0); //-35 flip pivot
+	hipController.attachHead(headPointer);
 }
 
 // Called every frame
@@ -246,9 +251,8 @@ void AIkActor::getWeaponOnStart(){
 /// @param x x size
 /// @param y y size
 /// @param height height size
-/// @param offsetY offset on y
 /// @return new mesh actor
-AActor *AIkActor::createLimbPivotAtTop(int x, int y, int height, int offsetY){
+AActor *AIkActor::createLimbPivotAtTop(int x, int y, int height, int pushFront){
 
 	height *= -1; //orient downwardss
 	/**
@@ -268,14 +272,20 @@ AActor *AIkActor::createLimbPivotAtTop(int x, int y, int height, int offsetY){
 			//int width = 10;
 			//int height = -(legScaleCM / 2);
 
-			FVector a(0,offsetY,0);
-			FVector b(x,offsetY,0);
-			FVector c(x,y + offsetY,0);
-			FVector d(0, y + offsetY,0);
-			FVector at(0,offsetY,height);
-			FVector bt(x,offsetY,height);
-			FVector ct(x,y + offsetY,height);
-			FVector dt(0,y + offsetY,height);
+			float xHalf = x / 2.0f;
+			float yHalf = y / 2.0f;
+
+			FVector a(-xHalf + pushFront, -yHalf,0);
+			FVector b(xHalf + pushFront, -yHalf, 0);
+			FVector c(xHalf + pushFront, yHalf,0);
+			FVector d(pushFront, yHalf,0);
+
+
+			FVector at(-xHalf + pushFront, -yHalf, height);
+			FVector bt(xHalf + pushFront, -yHalf, height);
+			FVector ct(xHalf + pushFront, yHalf, height);
+			FVector dt(pushFront, yHalf, height);
+
 			oberschenkel->createCube(
 				a,b,c,d,at,bt,ct,dt,
 				material

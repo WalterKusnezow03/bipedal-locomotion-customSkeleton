@@ -47,7 +47,8 @@ private:
 	bool performRaycast(FVector &Start, FVector &dir, FVector &outputHit);
 
 
-	AActor *createLimbPivotAtTop(int x, int y, int height, int offsetY);
+	
+	AActor *createLimbPivotAtTop(int x, int y, int height, int pushFront);
 
 	float debugDeltaTimeTrigger = 0.0f;
 	void debugFunction();
