@@ -9,6 +9,7 @@ TwoBone::TwoBone()
     hipLimbPointer = nullptr;
 	kneeLimbPointer = nullptr;
 	footLimbPointer = nullptr;
+    isArmFlag = false;
 }
 
 TwoBone& TwoBone::operator=(const TwoBone &other){
@@ -23,6 +24,7 @@ TwoBone& TwoBone::operator=(const TwoBone &other){
     knee = other.knee;
     foot = other.foot;
     toFootTip = other.toFootTip;
+    isArmFlag = other.isArmFlag;
 
     return *this;
 }
@@ -41,7 +43,9 @@ TwoBone::~TwoBone()
 	footLimbPointer = nullptr;
 }
 
-
+void TwoBone::setAsArm(){
+    isArmFlag = true;
+}
 
 /// @brief sets up the leg or arm (Bone)
 /// @param completeDistance distance in meters
@@ -320,13 +324,14 @@ void TwoBone::rotateEndToTarget(
     /**
      * Top view yaw rotation of weight
      * 
-     * gewicht ziegt ja irgendwo in zy pane und dann wird die bein achse (um -z) gespinnt.
+     * gewicht ziegt ja irgendwo in zy pane und dann wird die bein achse (um z) gespinnt.
      */
     //testing needed
     if(std::abs(weight.Y) >= 0.1f){ //gegen epsilon prüfen.
         float rollAngleWeight = rollAngleTo(weight);
         start.yawRadAdd(rollAngleWeight); //yaw drehen weil fuss erstmal nach unten zeigt, rotiert um eigene achse
     }
+
     
 
 
@@ -379,8 +384,8 @@ void TwoBone::rotateEndToTarget(
         hipAngle < 0.0f  //angle zeigt grade nach vorne
     ){ 
         //both angles flip based on weight direction 
-        hipAngle *= -1;
-        kneeAngle *= -1;
+        hipAngle *= -1.0f;
+        kneeAngle *= -1.0f;
     }
 
     //ETHA & WEIGHT ---> funktioniert auch wie erwartet 
@@ -411,13 +416,23 @@ void TwoBone::rotateEndToTarget(
     
 
 
+    /**
+     *  --- global yaw ---
+     */
+    if(isArmBone()){
+        float yawAngle = yawAngleTo(vec) * -1.0f;
+        start.yawRadAdd(createHipAngle(yawAngle));
+    }
+    
+    
+
 }
 
-
-
-
-
-
+/// @brief fllag for global yaw rotation, is blocked for leg movement because of. Bugs.
+/// @return is meant to be an arm or not
+bool TwoBone::isArmBone(){
+    return isArmFlag;
+}
 
 /// @brief calculates the yaw angle (from top perspektive) to a local target
 /// making the leg for example turn as a whole to the left or right
@@ -500,7 +515,7 @@ float TwoBone::rollAngleTo(FVector &localTarget){
 /// @param oY y comp of vector b
 /// @return +1 for counter clock wise rotation or -1. Multiply your angle with the returned
 /// value to make your angle signed 
-int TwoBone::flipRotation(float aX, float aY, float oX, float oY){
+float TwoBone::flipRotation(float aX, float aY, float oX, float oY){
     //kreuzproduk 2D
     //A:=(a,b,0) B:=(c,d,0)
     //normal := A cross B
@@ -512,9 +527,9 @@ int TwoBone::flipRotation(float aX, float aY, float oX, float oY){
     // Wenn das Kreuzprodukt negativ ist, ist der Winkel im Uhrzeigersinn,
     // also negieren wir den Winkel.
     if (crossProduct_z < 0) {
-        return -1;
+        return -1.0f;
     }
-    return 1;
+    return 1.0f;
 }
 
 /// @brief resets the rotationof hip knee and foot to original position
@@ -885,7 +900,14 @@ MMatrix TwoBone::buildWithOutput(
     if (world != nullptr)
     {
         for (int i = 1; i < resultDraw.size(); i++){
-            DebugHelper::showLineBetween(world, resultDraw[i - 1], resultDraw[i], color, displayTime);
+            if(isArmBone()){
+                if(i != resultDraw.size() - 1){
+                    DebugHelper::showLineBetween(world, resultDraw[i - 1], resultDraw[i], color, displayTime);
+                }
+            }else{
+                DebugHelper::showLineBetween(world, resultDraw[i - 1], resultDraw[i], color, displayTime);
+            }
+            
         }
     }
 

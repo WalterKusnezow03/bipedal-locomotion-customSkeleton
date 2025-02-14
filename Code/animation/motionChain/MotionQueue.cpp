@@ -98,9 +98,11 @@ void MotionQueue::Tick(
             //actor and wanted rotation combined for the carried item
             MMatrix rotatorMatrix = MMatrix::createRotatorFrom(rotation);
             MMatrix transformCopy = transform;
-            transformCopy *= rotatorMatrix;
+            transformCopy.setTranslation(0, 0, 0);
+            transformCopy = transformCopy * rotatorMatrix; //M = B * A <-- lese richtung --
 
             FRotator finalRotation = transformCopy.extractRotator();
+
 
             item->SetActorRotation(finalRotation);
             item->SetActorLocation(posWorld);
@@ -118,14 +120,15 @@ void MotionQueue::Tick(
             MotionAction *currentStatePointer = &statesMap[currentState];
             if(currentStatePointer != nullptr){
 
-                //MUST BE CLEANED AND REFACTURED!
+                
                 //setting up data for the weapon transform
+                MMatrix rotationRein = transform;
+                rotationRein.setTranslation(0, 0, 0); //make pure rotation matrix
                 MMatrix rotation = currentStatePointer->copyRotationAsMMatrix();
-                rotation *= transform;
-                FRotator finalRotation = rotation.extractRotator();
+                rotationRein *= rotation; //erst skellet dann target rotation
+
+                FRotator finalRotation = rotationRein.extractRotator();
                 item->SetActorRotation(finalRotation);
-
-
 
                 FVector location = currentStatePointer->copyPosition();
                 FVector posWorld = transform * location;
@@ -149,6 +152,10 @@ void MotionQueue::Tick(
 
         FVector rightHandtarget = item->rightHandLocation();
         FVector leftHandtarget = item->leftHandLocation();
+
+        //DebugHelper::showLineBetween(item->GetWorld(), rightHandtarget, rightHandtarget + FVector(0, 0, 50));
+        //DebugHelper::showLineBetween(item->GetWorld(), leftHandtarget, leftHandtarget + FVector(0, 0, 50));
+
         FVector weight(0, 0, -1);
 
         //dont move arms if state is none

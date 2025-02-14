@@ -336,20 +336,9 @@ void MMatrix::yawRadAdd(float a){
 MMatrix MMatrix::createRotatorFromRad(float x, float y, float z){
 
     MMatrix result;
-
-    //zerlegt
-    MMatrix rollMat;
-    rollMat.rollRadAdd(x);
-
-    MMatrix pitchMat;
-    rollMat.pitchRadAdd(y);
-
-    MMatrix yawMat;
-    rollMat.yawRadAdd(x);
-
-    result *= rollMat;
-    result *= pitchMat;
-    result *= yawMat;
+    result.rollRadAdd(x);
+    result.pitchRadAdd(y);
+    result.yawRadAdd(z);
 
     return result;
 }

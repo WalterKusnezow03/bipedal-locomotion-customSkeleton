@@ -21,11 +21,14 @@ public:
 
 	TwoBone& operator=(const TwoBone &other);
 
+
 	FVector endLimbWorldLocation();
 	FVector startRelativeToEnd_Initial();
 
 	void setupBones(float completeDistance);
 	void setupBones(float distanceHipKnee, float distanceKneeFoot);
+	void setAsArm();
+	bool isArmBone();
 
 	void build(
 		UWorld *world, 
@@ -85,6 +88,8 @@ private:
 	bool actorIsAlreadAttached(AActor &actor);
 
 private:
+	bool isArmFlag = false;
+
 	float createEthaFromDistance(float distance);
 	float angleFromEtha(float etha);
 	float createHipAngle(float angle);
@@ -110,7 +115,7 @@ private:
 
 	
 
-	int flipRotation(float aX, float aY, float oX, float oY);
+	float flipRotation(float aX, float aY, float oX, float oY);
 
 	/// @brief hip or shoulder
 	MMatrix hip;

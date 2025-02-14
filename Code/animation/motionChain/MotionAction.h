@@ -15,6 +15,9 @@ public:
 	MotionAction(FVector &a, FRotator &b);
 	~MotionAction();
 
+	MotionAction(const MotionAction &other);
+	MotionAction &operator=(const MotionAction &other);
+
 	FVector copyPosition();
 	FRotator copyRotation();
 	MMatrix copyRotationAsMMatrix();
@@ -22,6 +25,7 @@ public:
 	void setLocation(FVector &pos);
 	void setRotation(FRotator &rotator);
 	void setLocationAndRotation(FVector &pos, FRotator &rotator);
+	void setLocationAndRotation(MMatrix &transformMat);
 
 private:
 	FVector targetLocation;

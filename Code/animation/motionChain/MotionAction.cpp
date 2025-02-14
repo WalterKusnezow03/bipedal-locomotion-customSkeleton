@@ -12,9 +12,28 @@ MotionAction::MotionAction(FVector &a, FRotator &b){
     targetLocation = a;
 }
 
+MotionAction::MotionAction(const MotionAction &other){
+    *this = other;
+}
+
+
+MotionAction& MotionAction::operator=(const MotionAction &other){
+    if(this == &other){
+        return *this;
+    }
+    targetRotation = other.targetRotation;
+    targetLocation = other.targetLocation;
+    return *this;
+}
+
 MotionAction::~MotionAction()
 {
 }
+
+
+
+
+
 
 FVector MotionAction::copyPosition(){
     return targetLocation;
@@ -39,4 +58,10 @@ void MotionAction::setRotation(FRotator &rotator){
 void MotionAction::setLocationAndRotation(FVector &pos, FRotator &rotator){
     setLocation(pos);
     setRotation(rotator);
+}
+
+void MotionAction::setLocationAndRotation(MMatrix &transformMat){
+    FVector pos = transformMat.getTranslation();
+    FRotator rotator = transformMat.extractRotator();
+    setLocationAndRotation(pos, rotator);
 }
