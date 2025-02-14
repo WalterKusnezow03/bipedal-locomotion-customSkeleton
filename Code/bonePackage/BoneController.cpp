@@ -96,13 +96,9 @@ BoneController::~BoneController()
 
 
 
-
-
-
-
-
-
-
+FVector BoneController::lookDirection(){
+	return ownOrientation.lookDirXForward().GetSafeNormal();
+}
 
 /// @brief finds the bone by index, returns a pointer to the bone
 /// @param limbIndex 
@@ -459,7 +455,14 @@ void BoneController::LookAt(FVector TargetLocation)
 			return;
 		}
 		//isWaitingForAnimStop = true;
-		
+
+
+		//walk towards wanted rotation
+		if(currentMotionState == BoneControllerStates::none){
+			rotationWithoutLocomotion = true;
+			currentMotionState = BoneControllerStates::locomotion;
+		}
+	
 		if(currentMotionState == BoneControllerStates::locomotion){
 			latestLookAtDirection = connect;
 
@@ -490,6 +493,12 @@ void BoneController::updateRotation(float signedAngle){
 void BoneController::resetPendingRotationStatus(){
 	ALIGNHIP_FLAG = false;
 	lookAtPendingAngle = 0.0f;
+
+	//reset rotation locotmotion flag
+	if(rotationWithoutLocomotion){
+		currentMotionState = BoneControllerStates::none;
+		rotationWithoutLocomotion = false;
+	}
 }
 
 
@@ -691,7 +700,10 @@ void BoneController::refreshLocomotionframes(){
 
 
 void BoneController::stopLocomotion(){
-	isWaitingForAnimStop = true;
+	if(currentMotionState != BoneControllerStates::none){
+		isWaitingForAnimStop = true;
+	}
+	
 }
 
 void BoneController::weaponAimDownSight(){

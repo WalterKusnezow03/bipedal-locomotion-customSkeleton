@@ -39,6 +39,7 @@ public:
 	void updateRotation(float addDegreeYaw);
 
 	MMatrix currentTransform();
+	FVector lookDirection();
 
 	void overrideRotationYaw(float degree);
 
@@ -81,6 +82,9 @@ private:
 	bool rotationPending = false;
 	void TickInPlaceWalk(float DeltaTime);
 	class TargetInterpolator rotationInterpolator;
+
+	bool rotationWithoutLocomotion = false;
+
 
 	void refreshLocomotionframes();
 
