@@ -1002,57 +1002,43 @@ void BoneController::TickBuildNone(float DeltaTime){
 /// @param DeltaTime 
 void BoneController::TickArms(float DeltaTime){
 
-	
-
-	/**
-	 * arm holing item at least one handed if attached
-	 */
-	if(attachedCarriedItem != nullptr){
-
-
-		/**
-		 * 
-		 * 
-		 * ----- NEW SECTION FOR ARMS! Ticking the arm motion queue-----
-		 * 
-		 * 
-		 */
-		if(currentMotionState != BoneControllerStates::locomotionClimbAll || 
-			(currentMotionState == BoneControllerStates::locomotionClimbAll &&
-		 	armMotionQueue.isTransitioning())
-		){
-			MMatrix transform = currentTransform();
-			MMatrix transformLeftArm = currentTransform(SHOULDER_1);
-			MMatrix transformRightArm = currentTransform(SHOULDER_2);
-			MMatrix *endEffectorLeft = findEndEffector(SHOULDER_1);
-			MMatrix *endEffectorRight = findEndEffector(SHOULDER_2);
-
-			TwoBone *leftArm = findBone(SHOULDER_1);
-			TwoBone *rightArm = findBone(SHOULDER_2);
-			if(
-				rightArm != nullptr && leftArm != nullptr &&
-				endEffectorRight != nullptr && endEffectorLeft != nullptr
-			){
-				armMotionQueue.Tick(
-					transform, 
-					transformLeftArm,
-					transformRightArm,
-					*endEffectorRight,
-					*endEffectorLeft,
-					*leftArm, 
-					*rightArm, 
-					attachedCarriedItem, 
-					DeltaTime
-				);
-
-				
-			}
+	//move arms if not climbing and no transition is left
+	if(currentMotionState == BoneControllerStates::locomotionClimbAll){
+		if(!armMotionQueue.isTransitioning()){ //no transition is left
+			return;
 		}
 	}
 
 
-	
+	MMatrix *endEffectorLeft = findEndEffector(SHOULDER_1);
+	MMatrix *endEffectorRight = findEndEffector(SHOULDER_2);
 
+	TwoBone *leftArm = findBone(SHOULDER_1);
+	TwoBone *rightArm = findBone(SHOULDER_2);
+	if(
+		rightArm != nullptr && leftArm != nullptr &&
+		endEffectorRight != nullptr && endEffectorLeft != nullptr
+	){
+
+		MMatrix transform = currentTransform();
+		MMatrix transformLeftArm = currentTransform(SHOULDER_1);
+		MMatrix transformRightArm = currentTransform(SHOULDER_2);
+
+
+		armMotionQueue.Tick(
+			transform, 
+			transformLeftArm,
+			transformRightArm,
+			*endEffectorRight,
+			*endEffectorLeft,
+			*leftArm, 
+			*rightArm, 
+			attachedCarriedItem, 
+			world,
+			DeltaTime
+		);
+				
+	}
 	
 }
 
@@ -1592,4 +1578,35 @@ FrameProjectContainer BoneController::generateFrameProjectContainer(int limbinde
 void BoneController::debugUpdateTransform(FVector location, FRotator rotation){
 	ownLocation.setTranslation(location);
 	ownOrientation.setRotation(rotation);
+}
+
+
+FVector BoneController::stabilizedHipLocation(){
+	FVector currentLocation = GetLocation();
+	if(currentMotionState == BoneControllerStates::locomotion){
+		if(leg1isPlaying){
+			FVector ground = legDoubleKeys_1.copyGroundPosition();
+			ground += FVector(0, 0, legScaleCM);
+			ground.X = currentLocation.X;
+			ground.Y = currentLocation.Y;
+			return ground;
+		}
+		else
+		{
+			FVector ground = legDoubleKeys_2.copyGroundPosition();
+			ground += FVector(0, 0, legScaleCM);
+			ground.X = currentLocation.X;
+			ground.Y = currentLocation.Y;
+			return ground;
+		}
+	}
+
+	return currentLocation;
+}
+
+void BoneController::debugDrawHeadForward(UWorld *worldPointer, float DeltaTime){
+	MMatrix t = currentTransform(HEAD);
+	FVector a = t.getTranslation();
+	FVector b = ownOrientation.lookDirXForward() * 100.0f + a;
+	DebugHelper::showLineBetween(worldPointer, a, b, FColor::Orange, DeltaTime * 2.0f);
 }

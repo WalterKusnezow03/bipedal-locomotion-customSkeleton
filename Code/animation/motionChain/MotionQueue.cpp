@@ -75,6 +75,7 @@ void MotionQueue::Tick(
     TwoBone &leftArm, 
     TwoBone &rightArm, 
     AcarriedItem *item, 
+    UWorld *world,
     float DeltaTime
 ){
 
@@ -139,13 +140,7 @@ void MotionQueue::Tick(
             }
         }
 
-        //debug draw item location to transform
         
-        /*DebugHelper::showLineBetween(
-            item->GetWorld(), 
-            transform.getTranslation(), 
-            item->GetActorLocation()
-        );*/
 
 
 
@@ -167,7 +162,7 @@ void MotionQueue::Tick(
                 transformLeftArm, // transform limb start
                 endEffectorLeft,
                 leftArm,
-                item->GetWorld()
+                world
             );
 
             moveBoneAndSnapEndEffectorToTarget(
@@ -177,26 +172,31 @@ void MotionQueue::Tick(
                 transformRightArm, //transform limb start
                 endEffectorRight,
                 rightArm,
-                item->GetWorld()
-            );
-        }else{
-            moveAndBuildBone(
-                DeltaTime,
-                transformLeftArm, // shoulder start
-                endEffectorLeft,
-                leftArm,
-                item->GetWorld()
-            );
-
-            moveAndBuildBone(
-                DeltaTime,
-                transformRightArm, // shoulder start
-                endEffectorRight,
-                rightArm,
-                item->GetWorld()
+                world
             );
         }
+    }else{
+        //default build bones if item is null!
+
+        moveAndBuildBone(
+            DeltaTime,
+            transformLeftArm, // shoulder start
+            endEffectorLeft,
+            leftArm,
+            world
+        );
+
+        moveAndBuildBone(
+            DeltaTime,
+            transformRightArm, // shoulder start
+            endEffectorRight,
+            rightArm,
+            world
+        );
+
     }
+
+    
     
 
 }

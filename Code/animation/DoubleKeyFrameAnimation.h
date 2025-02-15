@@ -39,7 +39,7 @@ public:
 
 	void processProjectOffset(FVector &offsetMade);
 	FVector getProjectionOffsetTimed(float DeltaTime, FVector currentEndEffector);
-	
+	FVector copyGroundPosition();
 
 	void overrideCurrentStartingFrame(FVector &currentLocationRelative);
 	void skipAnimationOnce(FVector start, FVector end);

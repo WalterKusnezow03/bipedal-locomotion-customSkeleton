@@ -20,6 +20,8 @@ public:
 	void updateGroundPosition(FVector groundIn);
 	bool groundReachedFlag();
 
+	FVector copyGroundPosition();
+
 private:
 	FVector groundPosition;
 	float epsilonGroundReached = 0.5f;

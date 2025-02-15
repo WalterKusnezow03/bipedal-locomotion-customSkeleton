@@ -160,6 +160,11 @@ FVector DoubleKeyFrameAnimation::getProjectionOffsetTimed(
     return gravityInterpolator.interpolate(currentEndEffector, DeltaTime);
 }
 
+/// @brief erstmal so lassen das einfach copy ist
+/// @return 
+FVector DoubleKeyFrameAnimation::copyGroundPosition(){
+    return gravityInterpolator.copyGroundPosition();
+}
 
 
 

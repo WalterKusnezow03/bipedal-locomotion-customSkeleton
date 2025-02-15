@@ -82,3 +82,8 @@ void GravityInterpolator::updateGroundPosition(FVector groundIn){
     groundPosition = groundIn;
     reachedFlag = false;
 }
+
+
+FVector GravityInterpolator::copyGroundPosition(){
+    return groundPosition;
+}

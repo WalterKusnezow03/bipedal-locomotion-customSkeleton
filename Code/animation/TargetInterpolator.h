@@ -54,9 +54,6 @@ public:
 	static FRotator interpolationRotation(FRotator fromIn, FRotator toIn, float skalar);
 	static FVector interpolation(FVector from, FVector to, float skalar);
 	 
-	FVector interpolationBezier(float skalar);
-	static FVector ThreeAnchorBezier(FVector &a, FVector &b, FVector &c, float skalar);
-
 	FVector readFromPosition();
 	FVector readToPosition();
 
@@ -93,4 +90,18 @@ protected:
 	static float rotationDirectionShorter(float a, float b);
 
 	float shorterAngleSum(FRotator &a, FRotator &b);
+
+
+
+	FVector HermiteInterpolate(float t);
+	FVector HermiteInterpolate(
+		FVector &p0,
+		FVector &p1,
+		FVector &m0, // tangente at p0
+		FVector &m1, // tangente at p1
+		float t
+	);
+
+
+
 };

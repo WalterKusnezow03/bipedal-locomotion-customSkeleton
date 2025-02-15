@@ -59,7 +59,7 @@ public:
 	void setStateRunning();
 	void stopLocomotion();
 
-	
+
 	void weaponAimDownSight(bool aimStatus);
 	void weaponAimDownSight();
 	void weaponContactPosition();
@@ -72,8 +72,10 @@ public:
 
 	void updateStatesBasedOnCamera(UCameraComponent &camera);
 
-	
-	
+	FVector stabilizedHipLocation();
+
+	void debugDrawHeadForward(UWorld *worldPointer, float DeltaTime);
+
 private:
 	void resetPendingRotationStatus();
 	float lookAtPendingAngle = 0.0f;

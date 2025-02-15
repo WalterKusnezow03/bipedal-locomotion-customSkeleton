@@ -33,6 +33,7 @@ public:
 		TwoBone &leftArm,
 		TwoBone &rightArm,
 		AcarriedItem *item,
+		UWorld *world,
 		float DeltaTime
 	);
 
