@@ -278,13 +278,13 @@ AActor *AIkActor::createLimbPivotAtTop(int x, int y, int height, int pushFront){
 			FVector a(-xHalf + pushFront, -yHalf,0);
 			FVector b(xHalf + pushFront, -yHalf, 0);
 			FVector c(xHalf + pushFront, yHalf,0);
-			FVector d(pushFront, yHalf,0);
+			FVector d(-xHalf + pushFront, yHalf,0);
 
 
 			FVector at(-xHalf + pushFront, -yHalf, height);
 			FVector bt(xHalf + pushFront, -yHalf, height);
 			FVector ct(xHalf + pushFront, yHalf, height);
-			FVector dt(pushFront, yHalf, height);
+			FVector dt(-xHalf + pushFront, yHalf, height);
 
 			oberschenkel->createCube(
 				a,b,c,d,at,bt,ct,dt,

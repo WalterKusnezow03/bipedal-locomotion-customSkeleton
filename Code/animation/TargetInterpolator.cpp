@@ -193,6 +193,7 @@ FVector TargetInterpolator::interpolate(float DeltaTime){
         reached = true;
         deltaTime = 0.0f;
         worldtargetSetup = false;
+        prev = from;
         return interpolated;
     }
 

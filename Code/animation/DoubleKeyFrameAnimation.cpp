@@ -453,23 +453,16 @@ FVector DoubleKeyFrameAnimation::interpolateWorld(
 
 
 void DoubleKeyFrameAnimation::updateInterpolatorB(FVector reachedA){
-    //relativer frame vom fuss zur hip
+    //relativer frame vom fuss zur hip ist einfach umgedreht.
     FVector relativeBFrame = reachedA * -1;
-
-    /**
-     * 
-     * angle must be measured here later too!
-     * 
-     */
+    
+    float distance = FVector::Dist(relativeBFrame, bTarget);
+    float velocityAll = framesA.averageVelocity() + velocityOfActor;
     float timeToFrameB = 0.1f;
-    if(velocityOfActor > 0.0f){
-        float distance = FVector::Dist(relativeBFrame, bTarget);
-        timeToFrameB = distance / velocityOfActor;
-    }else{
-        //very random.
-        timeToFrameB = framesA.totalLength();
-        timeToFrameB *= 0.5f; //debug
+    if(velocityAll > 0.0f){
+        timeToFrameB = distance / velocityAll;
     }
+
     interpolateB.setTarget(relativeBFrame, bTarget, timeToFrameB);
 
 }

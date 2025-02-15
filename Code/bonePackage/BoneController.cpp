@@ -996,8 +996,7 @@ void BoneController::TickBuildNone(float DeltaTime){
 }
 
 
-/// @brief will tick the arm movement and exclude arms
-/// if they are climbing
+/// @brief will tick the arm movement if not climbing
 /// call this method for any arm related tick
 /// @param DeltaTime 
 void BoneController::TickArms(float DeltaTime){
@@ -1397,6 +1396,11 @@ float BoneController::addVelocityBasedOnState(){
 	){
 		return 200.0f;
 	}
+
+	if(currentMotionState == BoneControllerStates::locomotion){
+		return 0.0f; //extra
+	}
+
 	return 0.0f;
 }
 
@@ -1505,8 +1509,9 @@ void BoneController::TickLocomotionClimbAll(float DeltaTime){
 /**
  * plays animations for limbs and their animations,
  * caution: the first bone to play backward kinematic in list, will be the only one for this
- * function call. Prevents bugs. All other animations will fix them selve because
- * the world frame is passed and updates the animation dynamically later
+ * function call. Prevents bugs. 
+ * All other animations will fix them selve because
+ * the world-frame is passed and updates the animation dynamically later
  */
 void BoneController::playForwardAndBackwardKinematicAnimSynchronized(
 	float DeltaTime,
@@ -1536,8 +1541,8 @@ void BoneController::playForwardAndBackwardKinematicAnimSynchronized(
 					playBackwardKinematicAnim(*bone, *frames, *effectorMat, DeltaTime, color, limbIndex);
 					backwardKinematicIsBlocked = true;
 
-					FString text = FString::Printf(TEXT("blocked backward adjust by  %d"), limbIndex);
-					DebugHelper::logMessage(text);
+					//FString text = FString::Printf(TEXT("blocked backward adjust by  %d"), limbIndex);
+					//DebugHelper::logMessage(text);
 				}
 			}
 		}

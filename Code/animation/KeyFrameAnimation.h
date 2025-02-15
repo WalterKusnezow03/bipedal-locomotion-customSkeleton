@@ -125,4 +125,13 @@ private:
 	bool performRaycast(UWorld *world, FVector &Start, FVector &dir, FVector &outputHit);
 
 
+
+
+	
+	void updateAverageVelocity();
+	float averageVelocityOfFrames = 0.0f;
+	float linearVelocity(FVector &a, FVector &b, float timeBetween);
+
+public:
+	float averageVelocity();
 };
