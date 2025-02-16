@@ -59,6 +59,8 @@ public:
 
 	void resetAnimationToStartAndResetRotation();
 
+	float averageVelocity();
+
 private:
 	class GravityInterpolator gravityInterpolator;
 

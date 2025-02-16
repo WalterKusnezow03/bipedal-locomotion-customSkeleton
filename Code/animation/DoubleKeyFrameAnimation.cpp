@@ -469,6 +469,12 @@ void DoubleKeyFrameAnimation::updateInterpolatorB(FVector reachedA){
 
 
 
+/// @brief returns the average linear velocity between keyframes
+/// @return average velocity
+float DoubleKeyFrameAnimation::averageVelocity(){
+    return framesA.averageVelocity();
+}
+
 
 
 
@@ -481,6 +487,9 @@ void DoubleKeyFrameAnimation::updateInterpolatorB(FVector reachedA){
  * 
  * 
  */
+
+/// @brief rotates the next keyframe animation in a signed yaw angle (degree)
+/// @param signedAngleYawDegree 
 void DoubleKeyFrameAnimation::rotateNextFramesA(
     float signedAngleYawDegree
 ){
@@ -488,6 +497,8 @@ void DoubleKeyFrameAnimation::rotateNextFramesA(
 }
 
 
+/// @brief resets the animation to anim a, and its animation to the first frame
+/// also removes any rotation previosuly applied
 void DoubleKeyFrameAnimation::resetAnimationToStartAndResetRotation(){
     isAnimationAPlaying = true;
     cycleComplete = false;

@@ -13,16 +13,16 @@ KeyFrameAnimation::KeyFrameAnimation()
     totalLengthSave = 0.0f;
     loop = true;
 
-    //interpolator.setSpeed(50.0f); //100
 }
 
+
+/// @brief constructor
+/// @param loopIn if true: last frame will be also interpolated to the first once one cycle is complete
 KeyFrameAnimation::KeyFrameAnimation(bool loopIn){
     frameIndex = 0;
     nextFrameIndex = 1;
     totalLengthSave = 0.0f;
     loop = loopIn;
-
-    //interpolator.setSpeed(50.0f); //debug
 }
 
 
@@ -430,6 +430,11 @@ FVector KeyFrameAnimation::interpolateWorld(
  * ---- new rotation on frames setup ----
  * 
  */
+
+
+/// @brief rotates this animations keyframe in a singed yaw angle,
+/// rotation will be reset once completed (reaching the end frame)
+/// @param signedAngleYawDegree 
 void KeyFrameAnimation::rotateNextFrames(float signedAngleYawDegree){
     if(signedAngleYawDegree == 0.0f){
         rotateFramesBasedOnAngle = false;

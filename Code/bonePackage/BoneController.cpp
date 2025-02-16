@@ -916,11 +916,16 @@ void BoneController::TickHipAutoAlign(float DeltaTime){
 
 	if(end != nullptr && bone != nullptr){
 
+		float averageVelocityOfAnimation = 0.0f;
 		FVector garivityVec;
 		if(leg1isPlaying){
 			garivityVec = legDoubleKeys_1.getProjectionOffsetTimed(DeltaTime, end->getTranslation());
-		}else{
+			averageVelocityOfAnimation = legDoubleKeys_1.averageVelocity();
+		}
+		else
+		{
 			garivityVec = legDoubleKeys_2.getProjectionOffsetTimed(DeltaTime, end->getTranslation());
+			averageVelocityOfAnimation = legDoubleKeys_2.averageVelocity();
 		}
 
 		//operator is overloaded
@@ -941,7 +946,7 @@ void BoneController::TickHipAutoAlign(float DeltaTime){
 			GetWorld(),
 			reachedHipTargetAutoAdjust,
 			//200.0f //2m/s
-			300.0f //3ms
+			averageVelocityOfAnimation 
 		);
 
 		if(!reachedHipTargetAutoAdjust)
