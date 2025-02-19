@@ -7,6 +7,15 @@
 
 MMatrix::MMatrix()
 {
+    makeIdentity();
+}
+
+MMatrix::~MMatrix()
+{
+
+}
+
+void MMatrix::makeIdentity(){
     for (int i = 0; i < 16; i++){
         array[i] = 0.0f;
     }
@@ -14,13 +23,8 @@ MMatrix::MMatrix()
     array[5] = 1.0f;
     array[10] = 1.0f;
     array[15] = 1.0f;
-
 }
 
-MMatrix::~MMatrix()
-{
-
-}
 
 /// @brief resets the rotation back to einheits matrix but not adjusting the translation
 void MMatrix::resetRotation(){
@@ -39,10 +43,18 @@ void MMatrix::resetRotation(){
 
 }
 
+
+MMatrix::MMatrix(FRotator &other){
+    makeIdentity();
+    setRotation(other);
+}
+
 /// @brief copy constructor
 /// @param other 
 MMatrix::MMatrix(const MMatrix &other){
-    if(&other != this){
+    makeIdentity();
+    if (&other != this)
+    {
         *this = other;
     }
 }
@@ -267,6 +279,10 @@ void MMatrix::yawRad(float a){
 /// @brief rotate along X in radian
 /// @param a 
 void MMatrix::rollRadAdd(float a){
+    if(a == 0.0f){
+        return;
+    }
+
     /*
     5  6
     9 10
@@ -291,6 +307,9 @@ void MMatrix::rollRadAdd(float a){
 /// @brief rotate with y
 /// @param a radian
 void MMatrix::pitchRadAdd(float a){
+    if(a == 0.0f){
+        return;
+    }
     /*
     0  2
     8 10
@@ -310,6 +329,10 @@ void MMatrix::pitchRadAdd(float a){
 }
 
 void MMatrix::yawRadAdd(float a){
+    if(a == 0.0f){
+        return;
+    }
+
     /*
     0  1
     4 5
@@ -377,7 +400,7 @@ void MMatrix::rotate(MMatrix &other){
         for (int row = 0; row < 3; row++){
 
             float sum = 0.0f;
-            for (int i = 0; i < 4; i++){
+            for (int i = 0; i < 3; i++){
                 float fromThis = get(i, row);
                 float fromOther = other.get(col, i);
                 sum += fromThis * fromOther;
@@ -393,8 +416,7 @@ void MMatrix::rotate(MMatrix &other){
     {
         for (int col = 0; col < 3; col++)
         {
-            int i = row * 4 + col;
-            array[i] = result.array[i];
+            set(col, row, result.get(col, row));
         }
     }
 
@@ -512,21 +534,45 @@ FRotator MMatrix::extractRotator(){
 
     //kontext: get(column, row)
     float _yaw = std::atan2f(get(0, 1), get(0, 0));
-    float _pitch = -1 * std::asinf(get(0, 2));
+    //float _pitch = -1 * std::asinf(get(0, 2));
+    float _pitch = -1 * std::asinf(FMath::Clamp(get(0, 2), -1.0f, 1.0f));
     float _roll = std::atan2f(get(1, 2), get(2, 2));
 
     _yaw = MMatrix::radToDegree(_yaw);
     _pitch = MMatrix::radToDegree(_pitch);
     _roll = MMatrix::radToDegree(_roll);
 
+    /*
+    if(FMath::IsNaN(_yaw)){
+        _yaw = 0.0f;
+    }
+    if(FMath::IsNaN(_pitch)){
+        _pitch = 0.0f;
+    }
+    if(FMath::IsNaN(_roll)){
+        _roll = 0.0f;
+    }*/
+
+
     //keep rotation like this
     //FRotator Constructor expects FRotator(Yin, Zin, Rin)
     FRotator r(-1 * _pitch, _yaw, -1 * _roll); 
 
 
+
+
+
+
     return r;
 
 }
+
+
+
+
+
+
+
 
 MMatrix MMatrix::extarctRotatorMatrix(){
     MMatrix out;
@@ -568,10 +614,8 @@ void MMatrix::transformFromWorldToLocalCoordinates(FVector &position){
 
 
 void MMatrix::set(int column, int row, float value){
-    int i = column;
-    int j = row;
-    bool lowerRange = i >= 0 && j >= 0;
-    bool higherRange = i < 4 && j < 4;
+    bool lowerRange = column >= 0 && row >= 0;
+    bool higherRange = column < 4 && row < 4;
     if(lowerRange && higherRange){
         int index = (row * 4) + column;
         array[index] = value;
@@ -784,9 +828,8 @@ void MMatrix::minusForRow(int row, int otherRow, float faktor) {
 
 
 FVector MMatrix::lookDirXForward(){
-    FVector look(1, 0, 0);
-    MMatrix a = *this;
-    a.setTranslation(0, 0, 0); //remove translation, make rotator only
+    FVector look(1.0f, 0.0f, 0.0f);
+    MMatrix a = extarctRotatorMatrix();
     return a * look;
 }
 

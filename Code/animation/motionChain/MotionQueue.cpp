@@ -73,7 +73,9 @@ void MotionQueue::Tick(
     MMatrix &endEffectorRight,
     MMatrix &endEffectorLeft,
     TwoBone &leftArm, 
-    TwoBone &rightArm, 
+    TwoBone &rightArm,
+    HandController &leftHand,
+    HandController &rightHand,
     AcarriedItem *item, 
     UWorld *world,
     float DeltaTime
@@ -174,6 +176,11 @@ void MotionQueue::Tick(
                 rightArm,
                 world
             );
+
+            FVector handLeftNewPos = endEffectorLeft.getTranslation();
+            FVector handRightNewPos = endEffectorRight.getTranslation();
+            leftHand.Tick(DeltaTime, world, handLeftNewPos, item);
+            rightHand.Tick(DeltaTime, world, handRightNewPos, item);
         }
     }else{
         //default build bones if item is null!
@@ -193,6 +200,11 @@ void MotionQueue::Tick(
             rightArm,
             world
         );
+
+        /**
+         * TODO HIER: HÄNDE AUCH RENDERN!
+         * 
+         */
 
     }
 

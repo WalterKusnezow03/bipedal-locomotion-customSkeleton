@@ -163,6 +163,12 @@ FColor BoneController::limbColor(int limb){
 
 //construct bones
 void BoneController::setupBones(){
+	/**
+     * x is forward, default look dir is foward X,
+     * y is right side by default! remember!
+     */
+
+
 	//setup
     leg1.setupBones(legScaleCM);
 	leg2.setupBones(legScaleCM);
@@ -194,6 +200,13 @@ void BoneController::setupBones(){
 
 	FVector weaponSocketFront(armScaleCM * 0.8f, 0.0f, armScaleCM); // same height as arm, forward is X
 	weaponMatrixOffset.setTranslation(weaponSocketFront);
+
+
+	//setup hands
+	HandController new1(HandBoneIndexEnum::leftHand);
+	HandController new2(HandBoneIndexEnum::rightHand);
+	hand1 = new1;
+	hand2 = new2;
 }
 
 
@@ -1037,6 +1050,8 @@ void BoneController::TickArms(float DeltaTime){
 			*endEffectorLeft,
 			*leftArm, 
 			*rightArm, 
+			hand1, //left hand new
+			hand2, //right hand new
 			attachedCarriedItem, 
 			world,
 			DeltaTime
@@ -1045,6 +1060,7 @@ void BoneController::TickArms(float DeltaTime){
 	}
 	
 }
+
 
 
 
@@ -1619,4 +1635,29 @@ void BoneController::debugDrawHeadForward(UWorld *worldPointer, float DeltaTime)
 	FVector a = t.getTranslation();
 	FVector b = ownOrientation.lookDirXForward() * 100.0f + a;
 	DebugHelper::showLineBetween(worldPointer, a, b, FColor::Orange, DeltaTime * 2.0f);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * 
+ * 
+ * new hand section -> empty yet
+ * 
+ * 
+ */
+void BoneController::TickHandsNone(float DeltaTime){
+
 }

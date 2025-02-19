@@ -13,6 +13,7 @@ public:
 	MMatrix();
 	~MMatrix();
 
+	MMatrix(FRotator &other);
 	MMatrix(const MMatrix &other);
 	MMatrix& operator=(const MMatrix &other);
 
@@ -100,5 +101,5 @@ private:
 	void scaleRow(int row, float scale);
 	void minusForRow(int row, int otherRow, float faktor);
 
-	
+	void makeIdentity();
 };

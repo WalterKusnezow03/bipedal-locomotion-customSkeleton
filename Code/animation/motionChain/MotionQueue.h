@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "MotionAction.h"
 #include "p2/entities/customIk/bonePackage/BoneController.h"
+#include "p2/entities/customIk/bonePackage/handPackage/HandController.h"
 #include "p2/entities/customIk/animation/TargetInterpolator.h"
 
 /**
@@ -32,6 +33,8 @@ public:
     	MMatrix &endEffectorLeft,
 		TwoBone &leftArm,
 		TwoBone &rightArm,
+		HandController &leftHand,
+    	HandController &rightHand,
 		AcarriedItem *item,
 		UWorld *world,
 		float DeltaTime

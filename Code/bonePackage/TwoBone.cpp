@@ -6,6 +6,10 @@
 
 TwoBone::TwoBone()
 {
+    /**
+     * x is forward, default look dir is foward X,
+     * y is right side by default! remember!
+     */
     hipLimbPointer = nullptr;
 	kneeLimbPointer = nullptr;
 	footLimbPointer = nullptr;
@@ -210,21 +214,22 @@ void TwoBone::createEthaPitchAnglesFor(
     float b2 = _b * _b;
     float c2 = _c * _c;
 
-    /*
+    
     float alpha = std::acosf(((b2 + c2 - a2) / (2 * _b * _c)));
     float beta = std::acosf(((a2 + c2 - b2) / (2 * _a * _c)));
     float gamma = std::acosf(((a2 + b2 - c2) / (2 * _a * _b)));
-    */
+   /* 
     float alpha = std::acosf(FMath::Clamp((b2 + c2 - a2) / (2 * _b * _c), -1.0f, 1.0f));
     float beta = std::acosf(FMath::Clamp((a2 + c2 - b2) / (2 * _a * _c), -1.0f, 1.0f));
     float gamma = std::acosf(FMath::Clamp((a2 + b2 - c2) / (2 * _a * _b), -1.0f, 1.0f));
-
+*/
 
 
     firstOuput = -1 * alpha;
     //secondOutput = alpha * 2; //*-2 um den winkel einfach zu flippen bei gleichgrossen knochen
-
-    gamma = MMatrix::degToRadian(180 - std::abs(MMatrix::radToDegree(gamma)));
+    
+    //debug disable
+    gamma = MMatrix::degToRadian(180.0f - std::abs(MMatrix::radToDegree(gamma)));
     secondOutput = gamma;
 
     /*FString debugAngleString = FString::Printf(
@@ -326,7 +331,6 @@ void TwoBone::rotateEndToTarget(
      * 
      * gewicht ziegt ja irgendwo in zy pane und dann wird die bein achse (um z) gespinnt.
      */
-    //testing needed
     if(std::abs(weight.Y) >= 0.1f){ //gegen epsilon prüfen.
         float rollAngleWeight = rollAngleTo(weight);
         start.yawRadAdd(rollAngleWeight); //yaw drehen weil fuss erstmal nach unten zeigt, rotiert um eigene achse
@@ -378,11 +382,7 @@ void TwoBone::rotateEndToTarget(
     //WEIGHT KNICK RICHTUNG
     //anhand des wights dann knicken flippen
     //also -x oder -z sorgen für einen invertierten knick
-    if(
-        (weight.X < 0.0f || weight.Z < 0.0f) 
-        && //wenn gewicht negativ
-        hipAngle < 0.0f  //angle zeigt grade nach vorne
-    ){ 
+    if(flipAngleForBoneNeeded(vec, weight, hipAngle)){ 
         //both angles flip based on weight direction 
         hipAngle *= -1.0f;
         kneeAngle *= -1.0f;
@@ -426,6 +426,21 @@ void TwoBone::rotateEndToTarget(
     
     
 
+}
+
+bool TwoBone::flipAngleForBoneNeeded(FVector &target, FVector &weight, float hipAngle){
+
+    bool flipByWeight = (weight.X < 0.0f || weight.Z < 0.0f); //wenn gewicht negativ
+    bool negativeHip = hipAngle < 0.0f; //angle zeigt grade nach vorne
+    if(flipByWeight && negativeHip){
+        return true;
+    }
+
+    bool negativeTarget = target.X < 0.0f;
+    if(negativeTarget){
+        return true;
+    }
+    return false;
 }
 
 /// @brief fllag for global yaw rotation, is blocked for leg movement because of. Bugs.

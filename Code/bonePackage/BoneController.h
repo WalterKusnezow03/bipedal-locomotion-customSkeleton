@@ -9,6 +9,7 @@
 #include "p2/entities/customIk/bonePackage/ArmMotionStates.h"
 #include "p2/entities/customIk/bonePackage/TwoBone.h"
 #include "p2/entities/customIk/MMatrix.h"
+#include "p2/entities/customIk/bonePackage/handPackage/HandController.h"
 #include "p2/entities/customIk/animation/motionChain/MotionQueue.h"
 #include "p2/entities/customIk/animation/FrameProjectContainer.h"
 
@@ -178,8 +179,8 @@ private:
 	class TwoBone arm1;
 	class TwoBone arm2;
 
-
-
+	class HandController hand1;
+	class HandController hand2;
 
 	void setupBones();
 	void setupAnimation();
@@ -189,6 +190,7 @@ private:
 	
 	
 	void TickArms(float DeltaTime);
+	void TickHandsNone(float DeltaTime);
 
 	void TickLegsNone(float DeltaTime);
 
