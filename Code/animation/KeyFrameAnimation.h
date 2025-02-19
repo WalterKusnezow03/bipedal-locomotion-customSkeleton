@@ -134,4 +134,5 @@ private:
 
 public:
 	float averageVelocity();
+	void scaleToVelocityInCms(float VcmPerSecond);
 };

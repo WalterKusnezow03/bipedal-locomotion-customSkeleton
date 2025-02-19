@@ -60,6 +60,7 @@ public:
 	void resetAnimationToStartAndResetRotation();
 
 	float averageVelocity();
+	void scaleToVelocityInCms(float VcmPerSecond);
 
 private:
 	class GravityInterpolator gravityInterpolator;

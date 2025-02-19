@@ -242,7 +242,7 @@ void BoneController::setupAnimation(){
 	legDoubleKeys_2.setAnimationA(MoveTemp(legKeysCopy));
 
 	FVector hipTargetFromFoot = FVector(0, 0, legScaleCM);
-	legDoubleKeys_1.setAnimationBAdjustPermanentTarget(hipTargetFromFoot);
+	legDoubleKeys_1.setAnimationBAdjustPermanentTarget(hipTargetFromFoot); //very important!
 	legDoubleKeys_2.setAnimationBAdjustPermanentTarget(hipTargetFromFoot);
 
 
@@ -250,6 +250,9 @@ void BoneController::setupAnimation(){
 	legDoubleKeys_1.setRunning(isRunning); //member var from this
 	legDoubleKeys_2.setRunning(isRunning);
 
+	//testing - works
+	legDoubleKeys_1.scaleToVelocityInCms(100.0f);
+	legDoubleKeys_2.scaleToVelocityInCms(100.0f);
 
 
 	/**

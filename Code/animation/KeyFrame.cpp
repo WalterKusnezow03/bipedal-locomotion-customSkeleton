@@ -35,3 +35,8 @@ float KeyFrame::readTimeToFrame(){
 bool KeyFrame::mustBeGrounded(){
     return grounded;
 }
+
+
+float KeyFrame::distanceTo(KeyFrame &other){
+    return FVector::Dist(other.position, position);
+}

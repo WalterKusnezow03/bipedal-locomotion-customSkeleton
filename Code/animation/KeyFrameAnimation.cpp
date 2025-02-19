@@ -625,3 +625,38 @@ float KeyFrameAnimation::averageVelocity(){
     //if new frames added: recreate
     return averageVelocityOfFrames;
 }
+
+
+
+/// @brief scale the velocity of the animation to a constant centimeter per second
+/// @param VcmPerSecond velocity in cms to have, must not be 0.0f! - otherwise not executed
+/// value will be made a absolute value!
+void KeyFrameAnimation::scaleToVelocityInCms(float VcmPerSecond){
+    VcmPerSecond = std::abs(VcmPerSecond);
+    if(VcmPerSecond < 0.00001f){
+        return;
+    }
+
+    //is tested
+    for (int i = 1; i < frames.size(); i++){
+        KeyFrame &prev = frames[i - 1];
+        KeyFrame &current = frames[i];
+        float dist = current.distanceTo(prev);
+        
+        //v = m/s
+        /**
+         * s := unknown , m := distance, v1 := targetVelocity
+         * 
+         * v1 = m/s
+         * v1 * s = m
+         * s = m / v1
+        */
+        float oldTime = current.readTimeToFrame();
+        float newTime = dist / VcmPerSecond;
+        current.setTimeToFrame(newTime);
+
+        
+    }
+    updateAverageVelocity();
+
+}

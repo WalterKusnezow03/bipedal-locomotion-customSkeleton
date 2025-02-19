@@ -476,9 +476,12 @@ float DoubleKeyFrameAnimation::averageVelocity(){
 }
 
 
-
-
-
+/// @brief scale the velocity of the animation to a constant centimeter per second
+/// @param VcmPerSecond velocity in cms to have, must not be 0.0f! - otherwise not executed
+/// value will be made a absolute value!
+void DoubleKeyFrameAnimation::scaleToVelocityInCms(float VcmPerSecond){
+    framesA.scaleToVelocityInCms(VcmPerSecond);
+}
 
 /**
  * 

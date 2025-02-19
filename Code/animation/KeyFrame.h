@@ -20,6 +20,8 @@ public:
 
 	void setTimeToFrame(float timeToFrameIn);
 
+	float distanceTo(KeyFrame &other);
+
 private:
 	FVector position;
 	float timeToFrame;
