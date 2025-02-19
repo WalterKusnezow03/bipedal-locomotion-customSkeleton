@@ -386,6 +386,21 @@ void BoneController::attachHead(AActor *headPointer){
 	}
 }
 
+void BoneController::attachFinger(
+	AActor *top, 
+	AActor *bottom, 
+	HandBoneIndexEnum hand,
+	HandBoneIndexEnum finger
+){
+	if(hand == HandBoneIndexEnum::leftHand){
+		hand1.attachLimbMeshes(top, bottom, finger);
+	}
+	if(hand == HandBoneIndexEnum::rightHand){
+		hand2.attachLimbMeshes(top, bottom, finger);
+	}
+}
+
+
 
 
 
@@ -740,7 +755,7 @@ void BoneController::updateStatesBasedOnCamera(UCameraComponent &camera){
 
 		FVector camForward = camera.GetForwardVector();
 		FVector camLocation = camera.GetComponentLocation() +
-							  camForward * armScaleCM * 0.9f;
+							  camForward * armScaleCM * 0.95f;
 
 		//location ins locale bringen!
 		currentTransform().transformFromWorldToLocalCoordinates(camLocation);

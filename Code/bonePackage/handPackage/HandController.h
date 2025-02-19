@@ -30,6 +30,9 @@ public:
 	void Tick(float DeltaTime, UWorld *worldin, AcarriedItem *item);
 	void Tick(float DeltaTime, UWorld *worldin, FVector &baseLocation, AcarriedItem *item);
 
+	void Tick(float DeltaTime, UWorld *worldin, FVector &location, MMatrix &rotationLook, AcarriedItem *item);
+
+	void attachLimbMeshes(AActor *top, AActor *bottom, HandBoneIndexEnum type);
 
 private:
 	class UWorld *world = nullptr;
@@ -42,8 +45,8 @@ private:
 	class MMatrix ownOrientation;
 	class MMatrix ownLocation;
 
-	float handWidthCm = 6.0f; //in cm
-	int fingerScaleCm = 8;
+	float handWidthCm = 4.0f; //in cm
+	int fingerScaleCm = 6;
 	void setupBones();
 
 	class TwoBone thumb;
@@ -88,4 +91,6 @@ private:
 
 	void DebugdrawHandToFingerStart(float DeltaTime);
 	void DebugdrawHandToFingerStart(float DeltaTime, HandBoneIndexEnum index);
+
+	bool isFinger(HandBoneIndexEnum type);
 };

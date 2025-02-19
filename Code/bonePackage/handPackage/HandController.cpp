@@ -111,6 +111,12 @@ void HandController::setupBones(){
     finger2.setupBones(fingerScaleCm);
     finger3.setupBones(fingerScaleCm);
     finger4.setupBones(thumbScale);
+
+    thumb.setAsArm();
+    finger1.setAsArm();
+    finger2.setAsArm();
+    finger3.setAsArm();
+    finger4.setAsArm();
 }
 
 MMatrix HandController::currentTransform(){
@@ -197,11 +203,6 @@ void HandController::Tick(float DeltaTime, UWorld *worldin){
     Tick(DeltaTime, worldin, copyOwn);
 }
 
-void HandController::Tick(float DeltaTime, UWorld *worldin, AcarriedItem *item){
-    FVector copyOwn = ownLocation.getTranslation();
-    Tick(DeltaTime, worldin, copyOwn, item);
-}
-
 
 void HandController::Tick(float DeltaTime, UWorld *worldin, FVector &newLocation){
     //save world pointer!
@@ -216,7 +217,6 @@ void HandController::Tick(float DeltaTime, UWorld *worldin, FVector &newLocation
     TickLimbNone(HandBoneIndexEnum::finger3, DeltaTime);
     TickLimbNone(HandBoneIndexEnum::finger4, DeltaTime);
 }
-
 
 void HandController::TickLimbNone(HandBoneIndexEnum limbIndex, float DeltaTime){
 	
@@ -239,6 +239,16 @@ void HandController::TickLimbNone(HandBoneIndexEnum limbIndex, float DeltaTime){
 
 
 
+void HandController::Tick(
+    float DeltaTime, 
+    UWorld *worldin,
+    FVector &location, 
+    MMatrix &rotationLook, 
+    AcarriedItem *item
+){
+    ownOrientation.setRotation(rotationLook);
+    Tick(DeltaTime, worldin, location, item);
+}
 
 void HandController::Tick(float DeltaTime, UWorld *worldin, FVector &newLocation, AcarriedItem *item){
     if(item == nullptr){
@@ -269,7 +279,8 @@ void HandController::Tick(float DeltaTime, UWorld *worldin, FVector &newLocation
     item->loadFingerTargets(fingerTargetContainer);
 
     //update rotation
-    setRotation(fingerTargetContainer.rotationByReference());
+    ownOrientation = ownOrientation * fingerTargetContainer.rotationByReference();
+    //setRotation(fingerTargetContainer.rotationByReference());
 
     if(true){
         for (int i = 0; i < size; i++){
@@ -342,15 +353,15 @@ void HandController::DebugdrawHandToFingerStart(float DeltaTime){
 
 
     //draw forward
-    if(false){
+    if(true){
         FVector start = currentTransform().getTranslation();
         FVector dir = ownOrientation.lookDirXForward();
         DebugHelper::showLineBetween(
             GetWorld(),
             start,
-            start + dir * 10.0f,
-            FColor::Yellow,
-            DeltaTime * 2.0f
+            start + dir * 30.0f,
+            FColor::Purple,
+            DeltaTime * 1.1f
         );
     }
     
@@ -364,6 +375,35 @@ void HandController::DebugdrawHandToFingerStart(float DeltaTime, HandBoneIndexEn
         a.getTranslation(),
         b.getTranslation(),
         FColor::Orange,
-        DeltaTime * 2.0f
+        DeltaTime * 1.1f
     );
+}
+
+
+
+
+
+
+
+
+void HandController::attachLimbMeshes(AActor *top, AActor *bottom, HandBoneIndexEnum type){
+    if(isFinger(type)){
+        TwoBone *bone = fingerByIndex(type);
+        if(bone != nullptr){
+            if(top != nullptr){
+                bone->attachFirtsLimb(*top);
+            }
+            if(bottom != nullptr){
+                bone->attachSecondLimb(*bottom);
+            }
+        }
+    }
+}
+
+bool HandController::isFinger(HandBoneIndexEnum type){
+    return type == HandBoneIndexEnum::thumb ||
+           type == HandBoneIndexEnum::finger1 ||
+           type == HandBoneIndexEnum::finger2 ||
+           type == HandBoneIndexEnum::finger3 ||
+           type == HandBoneIndexEnum::finger4;
 }

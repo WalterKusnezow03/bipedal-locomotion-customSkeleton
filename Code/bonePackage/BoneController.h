@@ -54,6 +54,12 @@ public:
 	void attachPedalFoots(AActor *left, AActor *right);
 	void attachHead(AActor *headPointer);
 
+	void attachFinger(
+		AActor *top,
+		AActor *bottom,
+		HandBoneIndexEnum hand,
+		HandBoneIndexEnum finger
+	);
 
 	//movement and item interaction set state
 	void setStateWalking();

@@ -436,10 +436,13 @@ bool TwoBone::flipAngleForBoneNeeded(FVector &target, FVector &weight, float hip
         return true;
     }
 
-    bool negativeTarget = target.X < 0.0f;
-    if(negativeTarget){
-        return true;
+    if(isArmBone()){
+        bool negativeTarget = target.X < 0.0f;
+        if(negativeTarget){
+            return true;
+        }
     }
+    
     return false;
 }
 

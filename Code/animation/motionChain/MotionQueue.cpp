@@ -177,10 +177,11 @@ void MotionQueue::Tick(
                 world
             );
 
+            MMatrix rot = transform.extarctRotatorMatrix(); //MIGHT BE WRONG!
             FVector handLeftNewPos = endEffectorLeft.getTranslation();
             FVector handRightNewPos = endEffectorRight.getTranslation();
-            leftHand.Tick(DeltaTime, world, handLeftNewPos, item);
-            rightHand.Tick(DeltaTime, world, handRightNewPos, item);
+            leftHand.Tick(DeltaTime, world, handLeftNewPos,rot, item);
+            rightHand.Tick(DeltaTime, world, handRightNewPos,rot, item);
         }
     }else{
         //default build bones if item is null!
