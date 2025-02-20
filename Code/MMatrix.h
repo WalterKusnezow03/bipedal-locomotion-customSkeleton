@@ -65,6 +65,8 @@ public:
 
 	void invertRotation();
 
+	static void rotateVectorDeg2D(float angleDeg, FVector2D &vector);
+	static void rotateVectorRad2D(float angleRad, FVector2D &vector);
 
 private:
 	//16 langes array für die 4x4 matrix

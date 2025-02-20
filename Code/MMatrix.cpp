@@ -837,3 +837,29 @@ FVector MMatrix::lookDirXForward(){
 
 
 
+
+
+
+/**
+ * static helpers
+ */
+void MMatrix::rotateVectorDeg2D(float angleDeg, FVector2D &vector){
+    MMatrix::rotateVectorRad2D(MMatrix::degToRadian(angleDeg), vector);
+}
+
+void MMatrix::rotateVectorRad2D(float angleRad, FVector2D &vector){
+    /*          
+               x
+               y
+    cos -sin |  
+    sin cos  | 
+    */
+    float cos = std::cos(angleRad);
+    float sin = std::sin(angleRad);
+
+    float x = (cos * vector.X) + (-1 * sin * vector.Y);
+    float y = (sin * vector.X) + (cos * vector.Y);
+
+    vector.X = x;
+    vector.Y = y;
+}

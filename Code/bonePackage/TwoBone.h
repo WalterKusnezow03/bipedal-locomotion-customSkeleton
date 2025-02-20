@@ -93,6 +93,8 @@ private:
 	class AActor *footLimbPointer = nullptr;
 	bool actorIsAlreadAttached(AActor &actor);
 
+	void disableLimbCollision(AActor &actor);
+
 private:
 	bool isArmFlag = false;
 
