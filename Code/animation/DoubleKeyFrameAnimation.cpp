@@ -238,8 +238,6 @@ float DoubleKeyFrameAnimation::sinusFlyingOffset(float time, float width){
 
 void DoubleKeyFrameAnimation::projectNextFrameIfNeeded(
     FrameProjectContainer &container,
-    bool &switchToArmLocomotion,
-    float maxHeightSwitch,
     BoneControllerStates locomotionType
 ){
 
@@ -247,28 +245,33 @@ void DoubleKeyFrameAnimation::projectNextFrameIfNeeded(
         container
     );
 
-    FVector offsetMade = container.getOffsetFromOriginal();
-    FVector worldHitPoint = container.getWorldHit();
+    
 
     //locomotion climbing required to get to this height!
-    if(offsetMade.Z > maxHeightSwitch){
-        switchToArmLocomotion = true;
-        offsetMade = FVector(0, 0, 0); //reset, switched to arm locomotion
+    FVector offsetMade = container.getOffsetFromOriginal();
+    if (container.startClimb())
+    {
+        offsetMade = FVector(0, 0, 0);
+        if (locomotionType != BoneControllerStates::locomotionClimbAll)
+        {
+            return;
+        }
     }
-    if(locomotionType == BoneControllerStates::locomotionClimbAll)
-    { //dont apply anything if climbing keys
+
+    if(container.exceedsMaxHeight()){
         offsetMade = FVector(0, 0, 0);
     }
-        
-    //hier zusätzlich neue velocity speichern
-    velocityOfActor = container.getVelocity();
+    
     if(wasProjected){
-        processProjectOffset(offsetMade);
 
-        if(!switchToArmLocomotion)
-            gravityInterpolator.updateGroundPosition(worldHitPoint);
+        processProjectOffset(offsetMade);
+        FVector worldHitPoint = container.getWorldHit();
+        gravityInterpolator.updateGroundPosition(worldHitPoint);
+           
     }
 
+    //hier zusätzlich neue velocity speichern
+    velocityOfActor = container.getVelocity();
 }
 
 

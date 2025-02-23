@@ -33,7 +33,7 @@ void AIkActor::BeginPlay()
 	
 	//testing rotation
 	//hipController.overrideRotationYaw(-89.9f); //-90 anim bug!
-	hipController.overrideRotationYaw(-90.0f); //close to -90 (-89.9999f)anim bug! bei
+	//hipController.overrideRotationYaw(-90.0f); //close to -90 (-89.9999f)anim bug! bei
 	weaponPointer = nullptr;
 	hipController.setStateWalking();
 	getWeaponOnStart();
@@ -146,6 +146,7 @@ void AIkActor::Tick(float DeltaTime)
 
 
 void AIkActor::debugFunction(){
+	return;
 	hipController.updateRotation(-45.0f);
 }
 

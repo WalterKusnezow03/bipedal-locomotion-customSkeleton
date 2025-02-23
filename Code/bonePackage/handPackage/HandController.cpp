@@ -111,6 +111,7 @@ void HandController::setupBones(){
     finger2.setupBones(fingerScaleCm);
     finger3.setupBones(fingerScaleCm);
     finger4.setupBones(thumbScale);
+    return; //DEBUG
 
     thumb.setAsArm();
     finger1.setAsArm();

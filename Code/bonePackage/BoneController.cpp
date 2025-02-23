@@ -1301,13 +1301,11 @@ void BoneController::playForwardKinematicAnim(
 
 	// add velocity and project frames 
     
-	bool switchToClimbLocomotion = false;
+	
 
 	FrameProjectContainer container = generateFrameProjectContainer(leg);
 	frames.projectNextFrameIfNeeded(
 		container,
-		switchToClimbLocomotion, // boolean by reference, switch needed or not
-		armScaleCM,				 // max height
 		currentMotionState
 	);
 
@@ -1316,17 +1314,14 @@ void BoneController::playForwardKinematicAnim(
 
 
 	//override motion state if needed
-	if(switchToClimbLocomotion && currentMotionState == BoneControllerStates::locomotion){
+	//if(switchToClimbLocomotion && currentMotionState == BoneControllerStates::locomotion){
+	if(container.startClimb()){
 		currentMotionState = BoneControllerStates::locomotionClimbAll; //switch to climb motion
 
 		//put item to holster
 		armMotionQueue.updateState(ArmMotionStates::holsterItem);
+		return;
 	}
-
-	
-
-
-
 
 	//do movement
 	//nochmal neu rechnen nach offset
@@ -1606,7 +1601,9 @@ FrameProjectContainer BoneController::generateFrameProjectContainer(int limbinde
     FVector lookDir = currentTransform().lookDirXForward();
 	lookDir.Z = 0.0f; //xy pane only of interest
 
-	container.setup(GetWorld(), current, velocityT, lookDir);
+	float minHeightClimb = armScaleCM;
+	float maxHeightDoesntAllowClimb = armScaleCM * 2.0f; // max height
+	container.setup(GetWorld(), current, velocityT, lookDir, minHeightClimb, maxHeightDoesntAllowClimb);
 
 	return container;
 }

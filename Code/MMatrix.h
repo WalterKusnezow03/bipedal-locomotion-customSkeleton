@@ -41,7 +41,8 @@ public:
 	void pitchRadAdd(float angle);
 	void yawRadAdd(float angle);
 
-	
+	void scaleUniform(float value);
+	void scale(float x, float y, float z);
 
 	static float degToRadian(float deg);
 	static float radToDegree(float rad);
@@ -96,6 +97,7 @@ public:
 
 	FVector lookDirXForward();
 
+	void makeIdentity();
 
 private:
 	void set(int i, int j, float value);
@@ -103,5 +105,5 @@ private:
 	void scaleRow(int row, float scale);
 	void minusForRow(int row, int otherRow, float faktor);
 
-	void makeIdentity();
+	
 };

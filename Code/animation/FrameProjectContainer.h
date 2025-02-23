@@ -17,7 +17,14 @@ public:
 	FrameProjectContainer();
 	~FrameProjectContainer();
 
-	void setup(UWorld *world, MMatrix &currentActorMatrixTemporary, float velocity, FVector lookDir);
+	void setup(
+		UWorld *world, 
+		MMatrix &currentActorMatrixTemporary, 
+		float velocity, 
+		FVector lookDir, 
+		float lowerLimitToClimb,
+		float maxHeightForProjectionIn
+	);
 
 	UWorld *getWorld();
 	MMatrix &actorMatrix();
@@ -28,6 +35,11 @@ public:
 	FVector getWorldHit();
 	FVector getOffsetFromOriginal();
 
+	bool exceedsMaxHeight(FVector &offsetFromOriginal);
+	bool exceedsMaxHeight();
+
+	bool startClimb();
+	bool startClimbingAndNoExceedingMaxHeight();
 
 private:
 
@@ -40,4 +52,7 @@ private:
 	FVector lookdir;
 
 	FVector offsetFromOriginal;
+
+	float maxHeightForProjection;
+	float minHeightStartClimb;
 };

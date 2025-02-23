@@ -498,7 +498,9 @@ void KeyFrameAnimation::forceRefreshTarget(
 
 
 
-
+/// @brief projects the frame to the ground if max height is not exceeded!
+/// @param containerInOut 
+/// @return 
 bool KeyFrameAnimation::projectNextFrameToGroundIfNeeded(FrameProjectContainer &containerInOut){
     if(!nextFrameIsProjected() && nextFrameMustBeGrounded()){
 
@@ -512,12 +514,18 @@ bool KeyFrameAnimation::projectNextFrameToGroundIfNeeded(FrameProjectContainer &
             nextTimeToFrame
         );
 
-        overrideNextFrame(frameToProject);
+        //no climb
+        if(!containerInOut.startClimbingAndNoExceedingMaxHeight()){
+            //DebugHelper::showScreenMessage("PROJECTED", FColor::Purple);
+            overrideNextFrame(frameToProject);
 
-        FVector worldHitOutput = containerInOut.getWorldHit();
-        interpolator.overrideTargetWorld(worldHitOutput);
-
-        return true;
+            FVector worldHitOutput = containerInOut.getWorldHit();
+            interpolator.overrideTargetWorld(worldHitOutput);
+            return true;
+        }else{
+            //DebugHelper::showScreenMessage("NOT PROJECTED", FColor::Red);
+            return false;
+        }
     }
     return false;
 }
@@ -547,6 +555,8 @@ void KeyFrameAnimation::projectToGround(
     FVector offsetFuture = lookdir * (timeToFrame * velocity);
     frameInWorld += offsetFuture;
 
+    FVector frameInWorldNoRayOffset = frameInWorld;
+
     //EXTRA OFFSET NEEDED HERE, sont terrain nicht berührt, könnte durchlaufen!
 	frameInWorld += FVector(0, 0, raycastVerticalStartOffsetAdd);
 
@@ -574,11 +584,14 @@ void KeyFrameAnimation::projectToGround(
 
         //inverse vom hitpoint ins locale system
         MMatrix inverse = transform.jordanInverse();
-        hitpoint = inverse * hitpoint;
+        hitpoint = inverse * hitpoint; //in local now
+        FVector copyFrame = frameToProject;
         frameToProject = hitpoint;
-        
-        
-        FVector offsetMade = hitpoint - frameToProject;
+
+
+        FVector offsetMade = worldHitOutput - frameInWorldNoRayOffset; //CHECKUP NEEDED!  AB = B - A
+
+        DebugHelper::showScreenMessage("z offset", (float) offsetMade.Z);
 
         containerInOut.updateWorldHitAndOffset(worldHitOutput, offsetMade);
     }

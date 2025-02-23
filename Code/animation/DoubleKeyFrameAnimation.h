@@ -48,8 +48,6 @@ public:
 	
 	void projectNextFrameIfNeeded(
 		FrameProjectContainer &container,
-		bool &switchToArmLocomotion,
-		float maxHeightSwitch,
 		BoneControllerStates locomotionType
 	);
 

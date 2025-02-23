@@ -239,7 +239,7 @@ void TwoBone::createEthaPitchAnglesFor(
         MMatrix::radToDegree(alpha),
         MMatrix::radToDegree(gamma)
     );*/
-   
+
 
 }
 
@@ -354,16 +354,11 @@ void TwoBone::rotateEndToTarget(
         distance = totalBoneLengthCopy; //clamp
     }
 
-    // --- KNICK BASIS ---
-    /*
-    //distance to etha: (remember, here: 0 is extended, 1 is fully to hip, 180 deg angle)
-    //float etha = createEthaFromDistance(distance);
-    
-    float angle = angleFromEtha(etha);
-    float hipAngle = createHipAngle(angle);
-    float kneeAngle = createKneeAngle(angle);
-    */
+    //hier nicht global yaw!
 
+
+    // --- KNICK BASIS ---
+    
     float hipAngle = 0.0f;
     float kneeAngle = 0.0f;
 
@@ -376,9 +371,6 @@ void TwoBone::rotateEndToTarget(
         middle,
         end
     );
-
-
-
 
 
     //WEIGHT KNICK RICHTUNG
@@ -403,8 +395,8 @@ void TwoBone::rotateEndToTarget(
     
     /**
      *  --- global pitch ---
-     */
-    
+     
+    */
     //warum ist das immer initial:
     //die matrix zeigt zunächst immer nach unten, so ist der knochen im konstruktor definiert
     //und so muss auch die rotation gefunden werden, egal ob vorwärts
@@ -416,13 +408,29 @@ void TwoBone::rotateEndToTarget(
 
 
 
-    //moved to top! Better accuracy! (?)
+    
     /**
      *  --- global yaw ---
     */
     if(isArmBone()){
-        float yawAngle = yawAngleTo(vec);
-        start.yawRadAdd(yawAngle);
+        if(pitchTooLow(pitchAngle)){
+            float increase = 1.5f;
+            float frac = ((MMatrix::radToDegree(pitchAngle) * increase) / 100.0f); // doesnt work as expected
+            float angle = yawAngleTo(vec) * frac;
+            start.yawRadAdd(angle); // start
+
+            FString s = FString::Printf(
+                TEXT("ptch too low: %.2f ; fraction: %.2f"),
+                MMatrix::radToDegree(pitchAngle),
+                frac
+            );
+            DebugHelper::showScreenMessage(s, FColor::Black);
+        }
+        else
+        {
+            float yawAngle = yawAngleTo(vec); //arm overlap if pitch angle to steep!
+            start.yawRadAdd(yawAngle);
+        }
     }
 }
 
@@ -450,6 +458,14 @@ bool TwoBone::isArmBone(){
     return isArmFlag;
 }
 
+
+bool TwoBone::pitchTooLow(float globalPitch){
+    if(std::abs(MMatrix::radToDegree(globalPitch)) < 45.0f){
+        return true;
+    }
+    return false;
+}
+
 /// @brief calculates the yaw angle (from top perspektive) to a local target
 /// making the leg for example turn as a whole to the left or right
 /// like a top view 2d rotation
@@ -458,18 +474,7 @@ bool TwoBone::isArmBone(){
 /// @return signed rotation on xy pane from top
 float TwoBone::yawAngleTo(FVector &localTarget){
     
-    float part = 1.0f;
-    /**
-     * tries to fix issue where arms overlall
-    */
-    float deg = MMatrix::radToDegree(pitchAngleToInitialLookDirOfBone(localTarget));
-    if (std::abs(deg) < 45.0f)
-    {
-        part = 10.0f / (45.0f - std::abs(deg)); //1/45-44 /45-30
-        if(part > 1.0f){
-            part = 1.0f;
-        }
-    }
+    
 
     //calculate angle
     FVector2D forward2d(1.0f, 0);
@@ -493,8 +498,6 @@ float TwoBone::yawAngleTo(FVector &localTarget){
     
 
     xyTopViewAngle *= flipRotation(forward2d.X, forward2d.Y, xy.X, xy.Y);
-
-    xyTopViewAngle *= part; //testing
 
     return xyTopViewAngle;
 }

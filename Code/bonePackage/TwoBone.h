@@ -197,5 +197,5 @@ private:
 	
 	void copyCurrentMatricies();
 
-
+	bool pitchTooLow(float pitchAngle);
 };

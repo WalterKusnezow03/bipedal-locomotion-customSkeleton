@@ -836,9 +836,17 @@ FVector MMatrix::lookDirXForward(){
 
 
 
+void MMatrix::scaleUniform(float value){
+    scale(value, value, value);
+}
 
-
-
+void MMatrix::scale(float x, float y, float z){
+    MMatrix scaleMat;
+    scaleMat.set(0, 0, x);
+    scaleMat.set(1, 1, y);
+    scaleMat.set(2, 2, z);
+    *this *= scaleMat;
+}
 
 /**
  * static helpers
