@@ -1304,10 +1304,7 @@ void BoneController::playForwardKinematicAnim(
 	
 
 	FrameProjectContainer container = generateFrameProjectContainer(leg);
-	frames.projectNextFrameIfNeeded(
-		container,
-		currentMotionState
-	);
+	frames.projectNextFrameIfNeeded(container);
 
 	FVector thisAdd = container.getLookDir() * container.getVelocity() * DeltaTime;
 	ownLocation += thisAdd;
@@ -1601,9 +1598,17 @@ FrameProjectContainer BoneController::generateFrameProjectContainer(int limbinde
     FVector lookDir = currentTransform().lookDirXForward();
 	lookDir.Z = 0.0f; //xy pane only of interest
 
-	float minHeightClimb = armScaleCM;
-	float maxHeightDoesntAllowClimb = armScaleCM * 2.0f; // max height
-	container.setup(GetWorld(), current, velocityT, lookDir, minHeightClimb, maxHeightDoesntAllowClimb);
+	float minHeightClimb = armScaleCM * 1.8f;
+	float maxHeightDoesntAllowClimb = armScaleCM * 2.5f; // max height
+	container.setup(
+		GetWorld(), 
+		current, 
+		velocityT, 
+		lookDir, 
+		minHeightClimb, 
+		maxHeightDoesntAllowClimb,
+		currentMotionState
+	);
 
 	return container;
 }

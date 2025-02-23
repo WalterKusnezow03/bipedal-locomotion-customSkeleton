@@ -47,8 +47,7 @@ public:
 	
 	
 	void projectNextFrameIfNeeded(
-		FrameProjectContainer &container,
-		BoneControllerStates locomotionType
+		FrameProjectContainer &container
 	);
 
 	

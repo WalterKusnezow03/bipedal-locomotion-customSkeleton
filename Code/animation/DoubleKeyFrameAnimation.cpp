@@ -237,8 +237,7 @@ float DoubleKeyFrameAnimation::sinusFlyingOffset(float time, float width){
 
 
 void DoubleKeyFrameAnimation::projectNextFrameIfNeeded(
-    FrameProjectContainer &container,
-    BoneControllerStates locomotionType
+    FrameProjectContainer &container
 ){
 
     bool wasProjected = framesA.projectNextFrameToGroundIfNeeded(
@@ -252,7 +251,7 @@ void DoubleKeyFrameAnimation::projectNextFrameIfNeeded(
     if (container.startClimb())
     {
         offsetMade = FVector(0, 0, 0);
-        if (locomotionType != BoneControllerStates::locomotionClimbAll)
+        if (!container.locomotionStateIsClimb()) //not climbing: wanted to climb: return
         {
             return;
         }

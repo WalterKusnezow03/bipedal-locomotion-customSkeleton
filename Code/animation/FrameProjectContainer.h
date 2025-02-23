@@ -23,7 +23,8 @@ public:
 		float velocity, 
 		FVector lookDir, 
 		float lowerLimitToClimb,
-		float maxHeightForProjectionIn
+		float maxHeightForProjectionIn,
+		BoneControllerStates state
 	);
 
 	UWorld *getWorld();
@@ -41,6 +42,10 @@ public:
 	bool startClimb();
 	bool startClimbingAndNoExceedingMaxHeight();
 
+	BoneControllerStates locomotionState();
+	void updateLocomotionState(BoneControllerStates state);
+	bool locomotionStateIsClimb();
+
 private:
 
 	class UWorld *world;
@@ -55,4 +60,6 @@ private:
 
 	float maxHeightForProjection;
 	float minHeightStartClimb;
+
+	BoneControllerStates currentState;
 };

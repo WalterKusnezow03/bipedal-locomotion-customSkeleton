@@ -515,7 +515,10 @@ bool KeyFrameAnimation::projectNextFrameToGroundIfNeeded(FrameProjectContainer &
         );
 
         //no climb
-        if(!containerInOut.startClimbingAndNoExceedingMaxHeight()){
+        if(
+            !containerInOut.startClimbingAndNoExceedingMaxHeight() || 
+            containerInOut.locomotionStateIsClimb()
+        ){
             //DebugHelper::showScreenMessage("PROJECTED", FColor::Purple);
             overrideNextFrame(frameToProject);
 
