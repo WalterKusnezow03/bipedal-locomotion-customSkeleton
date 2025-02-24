@@ -21,15 +21,34 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
+	void enableCollisionOnLayer(materialEnum type, bool enable);
+	void enableCollisionOnLayer(int layer, bool enable);
+	void enableCollisionByPreset();
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void ApplyMaterial(
+		materialEnum type
+	);
+	void ApplyMaterialNoRaycastLayer(
+		materialEnum type
+	);
+
+	virtual void createTerrainFrom2DMap(
+		std::vector<std::vector<FVector>> &map
+	);
 	//to be overriden by subclass
 	virtual void createTerrainFrom2DMap(
 		std::vector<std::vector<FVector>> &map,
 		bool createTrees
 	);
+	void createTerrainFrom2DMap(
+		std::vector<std::vector<FVector>> &map,
+		TArray<FVectorTouple> &touples
+	);
+
 
 	static void createQuad(
 		FVector &a,
@@ -63,23 +82,36 @@ public:
 		UMaterial *material,
 		bool calculateNormals
 	);
+	
+	
+	void updateMesh(MeshData &otherMesh, bool createNormals, int layer);
+	void updateMeshNoRaycastLayer(MeshData &otherMesh, bool createNormals, int layer);
 
 protected:
 
+	void updateMesh(
+		UProceduralMeshComponent &meshcomponent,
+		MeshData &otherMesh, 
+		bool createNormals, 
+		int layer, 
+		std::map<int, MeshData> &map,
+		bool enableCollision
+	);
+
+
 	/// @brief saves the mesh data in a map for each layer, keeps things organized
 	std::map<int, MeshData> meshLayersMap;
+	std::map<int, MeshData> meshLayersMapNoRaycast;
 
 	UPROPERTY(VisibleAnywhere)
 	class UProceduralMeshComponent *Mesh;
 
-	
-	void createTerrainFrom2DMap(
-		std::vector<std::vector<FVector>> &map,
-		bool createTrees,
-		TArray<FVectorTouple> &touples
-	);
+	UPROPERTY(VisibleAnywhere)
+	class UProceduralMeshComponent *MeshNoRaycast;
 
-	void updateMesh(MeshData otherMesh, bool createNormals, int layer);
+
+
+	
 	static void buildTriangle(
 		FVector &a,
 		FVector &b,
@@ -103,10 +135,16 @@ protected:
 
 	//ok
 
+
 	void ApplyMaterial(UProceduralMeshComponent *ProceduralMeshComponent, UMaterial *Material);
 	void ApplyMaterial(
 		UProceduralMeshComponent *ProceduralMeshComponent,
 		UMaterial *Material,
 		int layer
 	);
+
+
+
+public:
+	static int layerByMaterialEnum(materialEnum type);
 };

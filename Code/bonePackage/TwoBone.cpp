@@ -334,19 +334,29 @@ void TwoBone::rotateEndToTarget(
      * gewicht ziegt ja irgendwo in zy pane und dann wird die bein achse (um z) gespinnt.
      */
     if(std::abs(weight.Y) >= 0.1f){ //gegen epsilon prüfen.
-        float rollAngleWeight = rollAngleTo(weight);
-        start.yawRadAdd(rollAngleWeight); //yaw drehen weil fuss erstmal nach unten zeigt, rotiert um eigene achse
+        float yawAngleWeight = yawAngleTo(weight); // rollAngleTo(weight);
+        start.yawRadAdd(yawAngleWeight); //yaw drehen weil fuss erstmal nach unten zeigt, rotiert um eigene achse
+    }
+
+    //verbessert den arm bug aber behebt ihn nicht ganz
+    if(isArmBone()){
+        float yawAngle = yawAngleTo(vec); //arm in korrekte richtung eindrehen, dann heben
+        
+        //normalisieren, nicht überdrehen
+        float inDeg = MMatrix::radToDegree(yawAngle);
+        float sign = inDeg < 0.0f ? -1.0f : 1.0f;
+        inDeg = std::abs(inDeg);
+        if (inDeg > 80.0f)
+        {
+            yawAngle = MMatrix::degToRadian(180.0f - inDeg) * sign;
+            //yawAngle = MMatrix::degToRadian(90.0f) * sign;
+        }
+        start.yawRadAdd(yawAngle);
     }
 
     
-
-
-
-    //etha reverse bauen
-    FVector zeroVec(0, 0, 0);
-
     //normalize the target location if exceeding the bone lenght
-    float distance = FVector::Distance(zeroVec, vec);
+    float distance = vec.Size();
     if (distance > totalBoneLengthCopy)
     {
         vec = vec.GetSafeNormal();
@@ -354,15 +364,11 @@ void TwoBone::rotateEndToTarget(
         distance = totalBoneLengthCopy; //clamp
     }
 
-    //hier nicht global yaw!
-
-
     // --- KNICK BASIS ---
     
     float hipAngle = 0.0f;
     float kneeAngle = 0.0f;
 
-    //ATTENTION: NEW TESTING COS SATZ!
     createEthaPitchAnglesFor(
         distance, 
         hipAngle, 
@@ -374,10 +380,8 @@ void TwoBone::rotateEndToTarget(
 
 
     //WEIGHT KNICK RICHTUNG
-    //anhand des wights dann knicken flippen
-    //also -x oder -z sorgen für einen invertierten knick
+    //anhand des wights dann knick winkel flippen
     if(flipAngleForBoneNeeded(vec, weight, hipAngle)){ 
-        //both angles flip based on weight direction 
         hipAngle *= -1.0f;
         kneeAngle *= -1.0f;
     }
@@ -391,47 +395,17 @@ void TwoBone::rotateEndToTarget(
 
 
 
-    // --- GLOBAL TO TARGET ROTATION ---
+    // --- GLOBAL PITCH TO TARGET ROTATION ---
     
-    /**
-     *  --- global pitch ---
-     
-    */
-    //warum ist das immer initial:
-    //die matrix zeigt zunächst immer nach unten, so ist der knochen im konstruktor definiert
+    //die matrix zeigt zunächst immer nach unten, so ist der limb im konstruktor definiert
     //und so muss auch die rotation gefunden werden, egal ob vorwärts
-    //oder rückwärts kinmatic! Der winkel ist beide male korrekt!
+    //oder rückwärts! Der winkel ist beide male korrekt!
     float pitchAngle = pitchAngleToInitialLookDirOfBone(vec); 
     float globalSideAdd = createHipAngle(pitchAngle);
     start.pitchRadAdd(globalSideAdd);
     
 
 
-
-    
-    /**
-     *  --- global yaw ---
-    */
-    if(isArmBone()){
-        if(pitchTooLow(pitchAngle)){
-            float increase = 1.5f;
-            float frac = ((MMatrix::radToDegree(pitchAngle) * increase) / 100.0f); // doesnt work as expected
-            float angle = yawAngleTo(vec) * frac;
-            start.yawRadAdd(angle); // start
-
-            FString s = FString::Printf(
-                TEXT("ptch too low: %.2f ; fraction: %.2f"),
-                MMatrix::radToDegree(pitchAngle),
-                frac
-            );
-            //DebugHelper::showScreenMessage(s, FColor::Black);
-        }
-        else
-        {
-            float yawAngle = yawAngleTo(vec); //arm overlap if pitch angle to steep!
-            start.yawRadAdd(yawAngle);
-        }
-    }
 }
 
 bool TwoBone::flipAngleForBoneNeeded(FVector &target, FVector &weight, float hipAngle){
@@ -580,7 +554,7 @@ void TwoBone::resetAllRotations(){
 
 
 float TwoBone::pitchAngleToInitialLookDirOfBone(FVector &localTarget){
-    FVector2D forward2d(0, -1); //0, -1
+    FVector2D forward2d(0.0f, -1.0f); //0, -1
     forward2d = forward2d.GetSafeNormal();
 
     FVector2D xz(localTarget.X, localTarget.Z);
@@ -731,7 +705,7 @@ MMatrix TwoBone::buildWithOutput(
 
 
     //draw
-    if (world != nullptr)
+    if (world != nullptr && DEBUG_DRAW)
     {
         for (int i = 1; i < resultDraw.size(); i++)
         {
@@ -943,7 +917,7 @@ MMatrix TwoBone::buildWithOutput(
 
 
     //draw
-    if (world != nullptr)
+    if (world != nullptr && DEBUG_DRAW)
     {
         for (int i = 1; i < resultDraw.size(); i++){
             if(isArmBone()){

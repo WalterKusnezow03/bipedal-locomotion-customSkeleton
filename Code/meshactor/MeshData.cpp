@@ -7,6 +7,10 @@ MeshData::MeshData()
 {
 }
 
+
+/// @brief creates the mesh from triangles and vertecies AND calculates the normals!
+/// @param verteciesIn 
+/// @param trianglesIn 
 MeshData::MeshData(TArray<FVector> &&verteciesIn, TArray<int> &&trianglesIn){
     setVertecies(MoveTemp(verteciesIn));
     setTriangles(MoveTemp(trianglesIn));
@@ -88,36 +92,24 @@ void MeshData::clearNormals(){
 void MeshData::calculateNormals(){
     
     // Iteriere über die Dreiecke und berechne Normalen
-    if(vertecies.Num() == triangles.Num()){
+    clearNormals();
+    normals.SetNum(vertecies.Num());
+    for (int i = 0; i < triangles.Num() - 2; i += 3) {
+        int32 Index0 = triangles[i];
+        int32 Index1 = triangles[i + 1];
+        int32 Index2 = triangles[i + 2];
 
-        clearNormals();
-        normals.SetNum(vertecies.Num());
-        for (int i = 0; i < triangles.Num() - 2; i += 3) {
-            int32 Index0 = triangles[i];
-            int32 Index1 = triangles[i + 1];
-            int32 Index2 = triangles[i + 2];
+        FVector Edge1 = vertecies[Index1] - vertecies[Index0];
+        FVector Edge2 = vertecies[Index2] - vertecies[Index0];
+        FVector Normal = FVector::CrossProduct(Edge1, Edge2).GetSafeNormal();
 
-            FVector Edge1 = vertecies[Index1] - vertecies[Index0];
-            FVector Edge2 = vertecies[Index2] - vertecies[Index0];
-
-            FVector Normal = FVector::CrossProduct(Edge1, Edge2).GetSafeNormal();
-
-            //summieren der alten normale, normalisieren
-            /*normals[Index0] = (normals[Index0] + Normal).GetSafeNormal();
-            normals[Index1] = (normals[Index1] + Normal).GetSafeNormal();
-            normals[Index2] = (normals[Index2] + Normal).GetSafeNormal();*/
-            normals[Index0] = Normal;
-            normals[Index1] = Normal;
-            normals[Index2] = Normal;
-        }
-
-        UKismetProceduralMeshLibrary::CalculateTangentsForMesh(vertecies, triangles, UV0, normals, Tangents);
+        normals[Index0] = Normal;
+        normals[Index1] = Normal;
+        normals[Index2] = Normal;
     }
+
+    UKismetProceduralMeshLibrary::CalculateTangentsForMesh(vertecies, triangles, UV0, normals, Tangents);
     
-
-
-
-
     
 }
 
@@ -132,19 +124,17 @@ void MeshData::setTriangles(TArray<int32> &&trianglesIn){
     triangles = MoveTemp(trianglesIn);
 }
 
-
-
-///join another mesh, vertecies add, triangles added with offset added to index
-void MeshData::append(MeshData &other){
+/// join another mesh, vertecies add, triangles added with offset added to index
+void MeshData::append(MeshData &other)
+{
     TArray<FVector> &verteciesRef = other.getVerteciesRef();
     TArray<int32> &trianglesRef = other.getTrianglesRef();
     TArray<FVector> &normalsRef = other.getNormalsRef();
     join(verteciesRef, trianglesRef, normalsRef);
 }
 
-
 void MeshData::join(TArray<FVector> &verteciesRef, TArray<int32> &trianglesRef, TArray<FVector> &normalsin){
-    int triangleOffset = triangles.Num();
+    int triangleOffset = vertecies.Num(); //beim vertex count offset starten!
 
     //copy triangles, apply offset
     for (int i = 0; i < trianglesRef.Num(); i++){
@@ -165,6 +155,135 @@ void MeshData::join(TArray<FVector> &verteciesRef, TArray<int32> &trianglesRef, 
         normals.Add(ref);
     }
 }
+
+
+
+/*
+
+---- manual adding section ----
+
+*/
+void MeshData::append(
+    FVector &a, 
+    FVector &b, 
+    FVector &c
+){
+    TArray<FVector> _vertecies;
+    TArray<int32> _triangles;
+    buildTriangle(a, b, c, _vertecies, _triangles);
+    MeshData appendMesh(
+        MoveTemp(_vertecies),
+        MoveTemp(_triangles)
+    );
+    append(appendMesh);
+}
+
+
+void MeshData::append(
+    FVector &a, 
+    FVector &b, 
+    FVector &c,
+    FVector &d
+){
+    append(a, b, c);
+    append(a, c, d);
+}
+
+void MeshData::appendDoublesided(
+    FVector &a, 
+    FVector &b, 
+    FVector &c
+){
+    /*
+    1 2
+    0 
+    */
+    append(a, b, c); 
+    append(a, c, b); 
+}
+
+
+void MeshData::buildTriangle(
+    FVector &a, 
+    FVector &b, 
+    FVector &c,
+    TArray<FVector> &output,
+    TArray<int32> &trianglesOutput
+){
+    //add vertecies
+    output.Add(a);
+    output.Add(b);
+    output.Add(c);
+
+    //add triangles
+    int32 offset = trianglesOutput.Num();
+    trianglesOutput.Add(0 + offset); // 0th vertex in the first triangle
+    trianglesOutput.Add(1 + offset); // 1st vertex in the first triangle
+    trianglesOutput.Add(2 + offset); // 2nd vertex in the first triangle
+}
+
+
+
+/// @brief offsets all vertecies in a given direction
+/// @param offset 
+void MeshData::offsetAllvertecies(FVector &offset){
+    for (int i = 0; i < vertecies.Num(); i++){
+        vertecies[i] += offset;
+    }
+}
+
+
+
+
+void MeshData::appendVertecies(std::vector<FVector> &vec){
+    if(vec.size() <= 0){
+        return;
+    }
+    if(vertecies.Num() == 0){
+        for (int i = 0; i < vec.size(); i++)
+        {
+            vertecies.Add(vec[i]);
+        }
+        return;
+    }
+    
+
+    //soll sich an die letzten vertecies anheften
+    //aber ohne vertecies zu duplizieren
+
+    int32 startingIndex = vertecies.Num() - vec.size(); // 0
+    int32 offset = vertecies.Num();
+    for (int i = 0; i < vec.size(); i++){
+        vertecies.Add(vec[i]);
+    }
+
+    //für jeden vertex den man hinzugefügt hat, aus 3 (+2) dreiecke basteln
+    for (int i = 0; i < vec.size(); i++){
+
+        //So richtig
+        /*
+            2 1       
+            0         
+        */
+        int next = (i + 1) % vec.size();
+        triangles.Add(startingIndex + i);
+        triangles.Add(offset + next);
+        triangles.Add(offset + i);
+
+        /*
+              3           
+            0 2       
+        */
+        triangles.Add(startingIndex + i);
+        triangles.Add(startingIndex + next);
+        triangles.Add(offset + next);
+    }
+
+
+
+}
+
+
 
 
 

@@ -20,6 +20,23 @@ public:
 	MeshData &operator=(const MeshData &other);
 
 	void append(MeshData &other);
+	void append(
+		FVector &a,
+		FVector &b,
+		FVector &c
+	);
+	void append(
+		FVector &a,
+		FVector &b,
+		FVector &c,
+		FVector &d
+	);
+
+	void appendDoublesided(
+		FVector &a,
+		FVector &b,
+		FVector &c
+	);
 
 	void rebuild(TArray<FVector> &&verteciesIn, TArray<int> &&trianglesIn);
 
@@ -37,10 +54,20 @@ public:
 	TArray<FProcMeshTangent> &getTangentsRef();
 	TArray<FColor> &getVertexColorsRef();
 
-	
+	void offsetAllvertecies(FVector &offset);
+
+	void appendVertecies(std::vector<FVector> &vec);
 
 private:
 	void clearNormals();
+
+	void buildTriangle(
+		FVector &a,
+		FVector &b,
+		FVector &c,
+		TArray<FVector> &output,
+		TArray<int32> &trianglesOutput
+	);
 
 	//mesh data i understand
 	TArray<FVector> vertecies;

@@ -18,6 +18,13 @@ AcustomMeshActorBase::AcustomMeshActorBase()
 	// Create the ProceduralMeshComponent
     Mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("GeneratedMesh"));
     RootComponent = Mesh;
+
+
+    MeshNoRaycast = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("noRaycastMesh"));
+    MeshNoRaycast->SetCollisionEnabled(ECollisionEnabled::NoCollision);  // Kein Raycast für diesen Layer
+
+    // Attach it to the RootComponent (Mesh) so it has the same transform
+    MeshNoRaycast->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned
@@ -38,48 +45,33 @@ void AcustomMeshActorBase::Tick(float DeltaTime)
 
 
 void AcustomMeshActorBase::createTerrainFrom2DMap(
-    std::vector<std::vector<FVector>> &map,
-    bool createTrees    
+    std::vector<std::vector<FVector>> &map
 ){
 	TArray<FVectorTouple> touples;
-	createTerrainFrom2DMap(map, createTrees, touples);
-
-
-	/*
-	//iterate over touples and add foliage based on height and if the pane is flat or vertical
-    if(createTrees){
-        MeshData mFoliage = createFoliage(touples);
-        updateMesh(mFoliage, false, 2); //try no normals for trees, layer 2 trees, ist getrennt.
-    }*/
-
+	createTerrainFrom2DMap(map, touples);
 }
 
 
-
-
-
+void AcustomMeshActorBase::createTerrainFrom2DMap(
+    std::vector<std::vector<FVector>> &map,
+    bool foliageFlag
+){
+    createTerrainFrom2DMap(map);
+}
 
 /// @brief process a 2D map of local coordinates
 /// correct position of the chunk must be set before!
 /// @param map 2D vector of LOCAL coordinates!
 void AcustomMeshActorBase::createTerrainFrom2DMap(
     std::vector<std::vector<FVector>> &map,
-    bool createTrees,
 	TArray<FVectorTouple> &touples 
 ){ //nach dem entity manager stirbt die refenz hier!
 
     
-   
-    
-    //grass
-    TArray<FVector> output_grass_layer;
-    TArray<int32> triangles_grass_layer;
+    //new refacturing
+    MeshData grassLayer;
+    MeshData stoneLayer;
 
-    //stone
-    TArray<FVector> output_stone_layer;
-    TArray<int32> triangles_stone_layer;
-
-    //TArray<FVectorTouple> touples; //first arg: center, second: normal
 
     std::vector<FVector> navMeshAdd;
 
@@ -110,13 +102,18 @@ void AcustomMeshActorBase::createTerrainFrom2DMap(
                     FVector normal = FVectorUtil::calculateNormal(vzero, vone, vtwo); //direction obviously
                     if(FVectorUtil::directionIsVertical(normal)){
                         //add to standard output, if direction of normal is vertical, the pane is flat
-                        buildQuad(vzero, vone, vtwo, vthree, output_grass_layer, triangles_grass_layer);
-                    }else{
+                        //buildQuad(vzero, vone, vtwo, vthree, output_grass_layer, triangles_grass_layer);
+
+                        createQuad(vzero, vone, vtwo, vthree, grassLayer);
+                    }
+                    else
+                    {
                         //otherwise the quad should be added to the second
                         //triangle / vertecy array for stone material, more vertical
-                        buildQuad(vzero, vone, vtwo, vthree, output_stone_layer, triangles_stone_layer);
-                    }
+                        //buildQuad(vzero, vone, vtwo, vthree, output_stone_layer, triangles_stone_layer);
 
+                        createQuad(vzero, vone, vtwo, vthree, stoneLayer);
+                    }
 
                     //calculate center
                     FVector centerLocal = FVectorUtil::calculateCenter(vzero, vone, vtwo);
@@ -163,36 +160,12 @@ void AcustomMeshActorBase::createTerrainFrom2DMap(
 
 
     //process created data and apply meshes and materials
+    updateMesh(grassLayer, true, layerByMaterialEnum(materialEnum::grassMaterial));
+    updateMesh(stoneLayer, true, layerByMaterialEnum(materialEnum::stoneMaterial));
 
-    MeshData grassLayer(
-        MoveTemp(output_grass_layer),
-        MoveTemp(triangles_grass_layer)
-    );
-    updateMesh(grassLayer, true, 0);
+    ApplyMaterial(materialEnum::grassMaterial);
+    ApplyMaterial(materialEnum::stoneMaterial);
 
-    MeshData stoneLayer(
-        MoveTemp(output_stone_layer),
-        MoveTemp(triangles_stone_layer)
-    );
-    updateMesh(stoneLayer, true, 1);
-
-
-
-
-    if(assetManager *e = assetManager::instance()){
-		
-		//SET MATERIALS HERE!
-
-        //grass
-        ApplyMaterial(Mesh, e->findMaterial(materialEnum::grassMaterial), 0); //layer 0
-        //stone
-        ApplyMaterial(Mesh, e->findMaterial(materialEnum::stoneMaterial), 1); //layer 1
-
-        //tree
-        ApplyMaterial(Mesh, e->findMaterial(materialEnum::treeMaterial), 2); //layer 2
-    
-    
-    }
 
     
 	
@@ -220,11 +193,21 @@ void AcustomMeshActorBase::createTerrainFrom2DMap(
 
 
 /// @brief updates a mesh layer given on a mesh data object (which will be deep copied)
-/// @param otherMesh 
-/// @param createNormals 
-/// @param layer 
-void AcustomMeshActorBase::updateMesh(MeshData otherMesh, bool createNormals, int layer){
-
+/// @param otherMesh some mesh, will be COPIED
+/// @param createNormals recreate normals
+/// @param layer layer to save in
+void AcustomMeshActorBase::updateMesh(MeshData &otherMesh, bool createNormals, int layer){
+    if(Mesh){
+        updateMesh(
+            *Mesh,
+            otherMesh,
+            createNormals,
+            layer,
+            meshLayersMap,
+            true // enableCollision
+        );
+    }
+    /*
     meshLayersMap[layer] = otherMesh; //assign operator is overriden
 
     MeshData *data = nullptr;
@@ -240,7 +223,7 @@ void AcustomMeshActorBase::updateMesh(MeshData otherMesh, bool createNormals, in
             data->calculateNormals();
         }
 
-        /**
+        / *
          * example: 
          * 
         Mesh->CreateMeshSection(
@@ -252,7 +235,7 @@ void AcustomMeshActorBase::updateMesh(MeshData otherMesh, bool createNormals, in
             VertexColors, 
             Tangents, 
             true
-        );*/
+        );* / 
         Mesh->ClearMeshSection(layer);
         Mesh->CreateMeshSection(
             layer, 
@@ -274,9 +257,99 @@ void AcustomMeshActorBase::updateMesh(MeshData otherMesh, bool createNormals, in
     //enable if was disabled!
     AActorUtil::showActor(*this, true);
     AActorUtil::enableColliderOnActor(*this, true);
-
+    */
 
 }
+
+
+
+void AcustomMeshActorBase::updateMeshNoRaycastLayer(MeshData &otherMesh, bool createNormals, int layer){
+    if(MeshNoRaycast){
+        updateMesh(
+            *MeshNoRaycast,
+            otherMesh,
+            createNormals,
+            layer,
+            meshLayersMapNoRaycast,
+            false // enableCollision
+        );
+    }
+}
+
+
+void AcustomMeshActorBase::updateMesh(
+    UProceduralMeshComponent &meshcomponent,
+    MeshData &otherMesh, 
+    bool createNormals, 
+    int layer, 
+    std::map<int, MeshData> &map,
+    bool enableCollision
+){
+    map[layer] = otherMesh; //assign operator is overriden
+
+    MeshData *data = nullptr;
+    if (map.find(layer) != map.end()){
+        //find meshData from map by reference
+        data = &map[layer]; //hier mit eckigen klammern weil .find ein iterator ist
+    }
+
+    if(data != nullptr){
+        
+        
+        if(createNormals){
+            data->calculateNormals();
+        }
+
+        /**
+         * example: 
+         * 
+        Mesh->CreateMeshSection(
+            layer, 
+            newvertecies, 
+            this->triangles, 
+            normals, 
+            UV0, 
+            VertexColors, 
+            Tangents, 
+            true
+        );*/
+        meshcomponent.ClearMeshSection(layer);
+        meshcomponent.CreateMeshSection(
+            layer, 
+            data->getVerteciesRef(),//newvertecies, 
+            data->getTrianglesRef(),//this->triangles, 
+            data->getNormalsRef(),//normals, 
+            data->getUV0Ref(),//UV0, 
+            data->getVertexColorsRef(),//VertexColors, 
+            data->getTangentsRef(),//Tangents, 
+            true
+        );
+
+        //set for spehere overlap
+        meshcomponent.SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        meshcomponent.SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+        meshcomponent.SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+
+    }
+    //enable if was disabled!
+    AActorUtil::showActor(*this, true);
+    AActorUtil::enableColliderOnActor(*this, true);
+
+
+    if(!enableCollision){
+        MeshNoRaycast->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }else{
+        MeshNoRaycast->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    }
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -359,16 +432,7 @@ void AcustomMeshActorBase::createQuad(
 		FVector &d,
 		MeshData &output
 ){
-    TArray<FVector> vertecies;
-    TArray<int32> triangles;
-    buildTriangle(a, b, c, vertecies, triangles);
-    buildTriangle(a, c, d, vertecies, triangles);
-
-    MeshData append(
-        MoveTemp(vertecies),
-        MoveTemp(triangles)
-    );
-    output.append(append);
+    output.append(a,b,c,d);
 }
 
 
@@ -455,5 +519,55 @@ void AcustomMeshActorBase::createTwoSidedQuad(
 
 
 
+
+
+
+/// @brief applies the material to the no raycast layer as expected
+/// @param type 
+void AcustomMeshActorBase::ApplyMaterialNoRaycastLayer(
+    materialEnum type
+){
+    int layer = AcustomMeshActorBase::layerByMaterialEnum(type);
+    if (assetManager *e = assetManager::instance())
+    {
+        ApplyMaterial(MeshNoRaycast, e->findMaterial(type), layer);
+    }
+}
+
+
+
+/// @brief will automatically apply the layer!
+/// @param type material enum type to refresh
+void AcustomMeshActorBase::ApplyMaterial(
+    materialEnum type
+){
+    int layer = AcustomMeshActorBase::layerByMaterialEnum(type);
+    if (assetManager *e = assetManager::instance())
+    {
+        ApplyMaterial(Mesh, e->findMaterial(type), layer);
+    }
+}
+
+
+/// @brief returns the layer by material enum type
+/// @param type type of material
+/// @return int layer index
+int AcustomMeshActorBase::layerByMaterialEnum(materialEnum type){
+    std::vector<materialEnum> types = {
+        materialEnum::grassMaterial,
+        materialEnum::wallMaterial,
+        materialEnum::glassMaterial,
+        materialEnum::stoneMaterial,
+        materialEnum::sandMaterial,
+        materialEnum::treeMaterial,
+        materialEnum::palmLeafMaterial
+    };
+    for (int i = 0; i < types.size(); i++){
+        if(type == types[i]){
+            return i;
+        }
+    }
+    return 0;
+}
 
 

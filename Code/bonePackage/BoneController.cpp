@@ -16,20 +16,28 @@ BoneController::BoneController()
 {
 	attachedTorso = nullptr;
 	attachedCarriedItem = nullptr;
-	setupBones();
-	setupAnimation(); // temporary zum denken
+	
 
 	currentMotionState = BoneControllerStates::none; //by default
 
+	//default scales
+	fingerScaleCmSetup = 6;
+	legScaleCM = 100.0f;
+	armScaleCM = 70.0f;
 
 	ALIGNHIP_FLAG = false;
+
+	setupBones();
+	setupAnimation(); 
 }
 
-BoneController::BoneController(float legScaleCmIn, float armScaleCmIn){
+BoneController::BoneController(float legScaleCmIn, float armScaleCmIn, int fingerScaleCmIn){
 	attachedTorso = nullptr;
 	attachedCarriedItem = nullptr;
 	legScaleCM = std::abs(legScaleCmIn);
 	armScaleCM = std::abs(armScaleCmIn);
+	fingerScaleCmSetup = std::abs(fingerScaleCmIn);
+
 	setupBones();
 	setupAnimation();
 	currentMotionState = BoneControllerStates::none;
@@ -84,6 +92,9 @@ BoneController &BoneController::operator=(BoneController &other){
 
 	ALIGNHIP_FLAG = false;
 
+	hand1 = other.hand1;
+	hand2 = other.hand2;
+
 	//caution: DO NOT COPY MESHES OR ATTACHED ITEMS! (?) -> will not be needed i guess.
 
 	return *this;
@@ -96,6 +107,18 @@ BoneController::~BoneController()
 
 
 
+int BoneController::armScale(){
+	return armScaleCM;
+}
+int BoneController::legScale(){
+	return legScaleCM;
+}
+int BoneController::fingerScale(HandBoneIndexEnum type){
+	return hand1.fingerScale(type);
+}
+
+/// @brief gets the look dir of the own orientation matrix
+/// @return 
 FVector BoneController::lookDirection(){
 	return ownOrientation.lookDirXForward().GetSafeNormal();
 }
@@ -203,8 +226,8 @@ void BoneController::setupBones(){
 
 
 	//setup hands
-	HandController new1(HandBoneIndexEnum::leftHand);
-	HandController new2(HandBoneIndexEnum::rightHand);
+	HandController new1(HandBoneIndexEnum::leftHand, fingerScaleCmSetup);
+	HandController new2(HandBoneIndexEnum::rightHand, fingerScaleCmSetup);
 	hand1 = new1;
 	hand2 = new2;
 }
@@ -326,7 +349,7 @@ void BoneController::setupAnimation(){
 	MotionAction contactState;
 	FRotator rotationForTarget2;
 	rotationForTarget2.Pitch = 45; //45 degree to front
-	FVector targetContactStateLocation(armScaleCM * 0.25f, 0, armScaleCM);
+	FVector targetContactStateLocation(armScaleCM * 0.5f, 0, armScaleCM);
 	contactState.setLocationAndRotation(targetContactStateLocation, rotationForTarget2);
 	armMotionQueue.addTarget(ArmMotionStates::kontaktStellung, contactState);
 
@@ -409,6 +432,8 @@ void BoneController::attachFinger(
 
 
 void BoneController::drawBody(float DeltaTime){
+	return;
+
 	MMatrix current = currentTransform();
 	MMatrix shoulder1 = currentTransform(SHOULDER_1);
 	MMatrix shoulder2 = currentTransform(SHOULDER_2);

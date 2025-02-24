@@ -26,7 +26,7 @@ public:
 	BoneController &operator=(BoneController &other);
 
 	BoneController();
-	BoneController(float boneLengthCm, float armScaleInCm);
+	BoneController(float boneLengthCm, float armScaleInCm, int fingerScaleCm);
 	BoneController(BoneController &other);
 
 	~BoneController();
@@ -82,6 +82,11 @@ public:
 	FVector stabilizedHipLocation();
 
 	void debugDrawHeadForward(UWorld *worldPointer, float DeltaTime);
+	
+
+	int armScale();
+	int legScale();
+	int fingerScale(HandBoneIndexEnum type);
 
 private:
 	void resetPendingRotationStatus();
@@ -178,6 +183,7 @@ private:
 
 	float legScaleCM = 100.0f;
 	float armScaleCM = 70.0f;
+	int fingerScaleCmSetup = 10;
 
 	class TwoBone leg1;
 	class TwoBone leg2;

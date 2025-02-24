@@ -8,12 +8,18 @@
 
 HandController::HandController()
 {
+    fingerScaleCm = 10;
     handIndexSaved = HandBoneIndexEnum::leftHand;
     setupBones();
     fingerTargetContainer.setup(handIndexSaved);
 }
 
-HandController::HandController(HandBoneIndexEnum handindex){
+HandController::HandController(HandBoneIndexEnum handindex, int fingerScaleIn){
+    fingerScaleCm = std::abs(fingerScaleIn);
+    if(fingerScaleCm == 0){
+        fingerScaleCm = 1;
+    }
+
     handIndexSaved = HandBoneIndexEnum::leftHand;
     if (handindex == HandBoneIndexEnum::leftHand || handindex == HandBoneIndexEnum::rightHand)
     {
@@ -55,6 +61,8 @@ HandController &HandController::operator=(HandController &other){
     ownOrientation = other.ownOrientation;
     ownLocation = other.ownLocation;
 
+    fingerScaleCm = other.fingerScaleCm;
+
     fingerTargetContainer.setup(handIndexSaved);
 
     return *this;
@@ -62,6 +70,13 @@ HandController &HandController::operator=(HandController &other){
 
 HandController::~HandController()
 {
+}
+
+int HandController::fingerScale(HandBoneIndexEnum type){
+    if(type == HandBoneIndexEnum::thumb){
+        return fingerScaleCm * 0.8f;
+    }
+    return fingerScaleCm;
 }
 
 void HandController::setTranslation(FVector vec){
@@ -105,7 +120,7 @@ void HandController::setupBones(){
 
 
     //set up all bones
-    float thumbScale = fingerScaleCm * 0.8f;
+    float thumbScale = fingerScale(HandBoneIndexEnum::thumb);
     thumb.setupBones(thumbScale);
     finger1.setupBones(fingerScaleCm);
     finger2.setupBones(fingerScaleCm);
@@ -259,7 +274,7 @@ void HandController::Tick(float DeltaTime, UWorld *worldin, FVector &newLocation
     world = worldin;
 
     //debug
-    if(true){
+    if(false){
         if(handIndexSaved == HandBoneIndexEnum::leftHand){
             return;
         }
@@ -354,7 +369,7 @@ void HandController::DebugdrawHandToFingerStart(float DeltaTime){
 
 
     //draw forward
-    if(true){
+    if(true && DEBUG_DRAW){
         FVector start = currentTransform().getTranslation();
         FVector dir = ownOrientation.lookDirXForward();
         DebugHelper::showLineBetween(
@@ -369,15 +384,18 @@ void HandController::DebugdrawHandToFingerStart(float DeltaTime){
 }
 
 void HandController::DebugdrawHandToFingerStart(float DeltaTime, HandBoneIndexEnum index){
-    MMatrix a = currentTransform(index);
-    MMatrix b = currentTransform();
-    DebugHelper::showLineBetween(
-        GetWorld(),
-        a.getTranslation(),
-        b.getTranslation(),
-        FColor::Orange,
-        DeltaTime * 1.1f
-    );
+    if(DEBUG_DRAW){
+        MMatrix a = currentTransform(index);
+        MMatrix b = currentTransform();
+        DebugHelper::showLineBetween(
+            GetWorld(),
+            a.getTranslation(),
+            b.getTranslation(),
+            FColor::Orange,
+            DeltaTime * 1.1f
+        );
+    }
+    
 }
 
 

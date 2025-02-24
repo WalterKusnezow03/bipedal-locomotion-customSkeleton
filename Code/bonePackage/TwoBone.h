@@ -97,6 +97,7 @@ private:
 
 private:
 	bool isArmFlag = false;
+	bool DEBUG_DRAW = false;
 
 	float createEthaFromDistance(float distance);
 	float angleFromEtha(float etha);

@@ -16,7 +16,7 @@ class P2_API HandController
 {
 public:
 	HandController();
-	HandController(HandBoneIndexEnum handIndex);
+	HandController(HandBoneIndexEnum handIndex, int fingerScale);
 	HandController(HandController &other);
 	~HandController();
 	HandController &operator=(HandController &other);
@@ -34,7 +34,11 @@ public:
 
 	void attachLimbMeshes(AActor *top, AActor *bottom, HandBoneIndexEnum type);
 
+	int fingerScale(HandBoneIndexEnum type);
+
 private:
+	bool DEBUG_DRAW = false;
+
 	class UWorld *world = nullptr;
 	UWorld *GetWorld();
 

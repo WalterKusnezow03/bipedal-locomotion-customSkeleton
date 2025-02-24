@@ -72,8 +72,9 @@ void AIkActor::BeginPlay()
 
 
 	// debug testing meshes
-	float legScaleCM = 100.0f;
-	float armScaleCM = 70.0f;
+	float legScaleCM = hipController.legScale();
+	float armScaleCM = hipController.armScale();
+	
 	float legHalfScale = legScaleCM / 2.0f;
 	float armHalfScale = armScaleCM / 2.0f;
 
