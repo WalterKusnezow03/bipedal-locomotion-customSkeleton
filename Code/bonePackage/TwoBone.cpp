@@ -339,14 +339,11 @@ void TwoBone::rotateEndToTarget(
         start.yawRadAdd(yawAngleWeight); //yaw drehen weil fuss erstmal nach unten zeigt, rotiert um eigene achse
     }
 
-    //verbessert den arm bug aber behebt ihn nicht ganz
-    if(isArmBone()){ //DEBUG
-        
+    //bei arm yaw und pitch zum ziel von interesse
+    if(isArmBone()){
         //new global start rotator testing
         MMatrix rotator = MMatrix::createRotatorFrom(vec, FVector2D(1, 0), FVector2D(0, -1));
         start *= rotator;
-
-
 
     }
 
@@ -397,17 +394,15 @@ void TwoBone::rotateEndToTarget(
     //und so muss auch die rotation gefunden werden, egal ob vorwärts
     //oder rückwärts! Der winkel ist beide male korrekt!
     
-    //test
+
     if(!isArmBone()){
-        float pitchAngle = pitchAngleToInitialLookDirOfBone(vec); 
+
+        //bei beinen nur pitch berücksichtigt
+        float pitchAngle = pitchAngleToInitialLookDirOfBone(vec);
         float globalSideAdd = createHipAngle(pitchAngle);
         start.pitchRadAdd(globalSideAdd);
     
     }
-    //old
-    /*float pitchAngle = pitchAngleToInitialLookDirOfBone(vec); 
-    float globalSideAdd = createHipAngle(pitchAngle);
-    start.pitchRadAdd(globalSideAdd);*/
     
 
     
@@ -562,21 +557,6 @@ void TwoBone::resetAllRotations(){
 
 float TwoBone::pitchAngleToInitialLookDirOfBone(FVector &localTarget){
     FVector2D forward2d(0.0f, -1.0f); //0, -1
-    forward2d = forward2d.GetSafeNormal();
-
-    FVector2D xz(localTarget.X, localTarget.Z);
-    xz = xz.GetSafeNormal(); //nur 2d normalisieren weil sonst fehler auftreten, nicht 3D!
-
-    
-    float xzSideViewAngle = std::acosf(FVector2D::DotProduct(forward2d, xz));
-    xzSideViewAngle *= flipRotation(forward2d.X, forward2d.Y, xz.X, xz.Y);
-
-    return xzSideViewAngle;
-}
-
-
-float TwoBone::pitchAngleToInitiaToUpDirOfBone(FVector &localTarget){
-    FVector2D forward2d(0, 1); //0, -1
     forward2d = forward2d.GetSafeNormal();
 
     FVector2D xz(localTarget.X, localTarget.Z);

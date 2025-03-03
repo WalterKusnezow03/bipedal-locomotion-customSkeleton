@@ -9,6 +9,9 @@
 #include "p2/entities/customIk/bonePackage/BoneController.h"
 #include "IkActor.generated.h"
 
+/**
+ * debug class showcase how a bone controller must be accessed from an bot
+ */
 UCLASS()
 class P2_API AIkActor : public AActor
 {
@@ -44,7 +47,7 @@ private:
 
 	void LookAt(FVector TargetLocation);	
 
-	bool performRaycast(FVector &Start, FVector &dir, FVector &outputHit);
+	
 
 
 	

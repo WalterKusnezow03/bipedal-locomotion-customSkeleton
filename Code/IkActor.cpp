@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "p2/entities/customIk/bonePackage/FabrikBone.h"
 #include "Kismet/KismetMathLibrary.h"
 #include <cmath>
 #include "p2/entities/customIk/animation/KeyFrameAnimation.h"
@@ -165,47 +164,6 @@ void AIkActor::SetLocation(FVector &location){
 
 
 
-/// @brief performs a raycast from a start, into a direction, with a max length in this method
-/// @param Start start position
-/// @param dir direction of interest
-/// @param outputHit output hit if any hit happened
-/// @return bool anything was hit
-bool AIkActor::performRaycast(FVector &Start, FVector &dir, FVector &outputHit) 
-{
-
-	float scaleOfVector = 200000; //some random value for now
-	FVector End = Start + dir * scaleOfVector; // gx = A + r (B - A)
-
-	// Perform the raycast
-	FHitResult HitResult;
-
-	FCollisionQueryParams ignoreParams;
-	/*
-	CAUTION: TEAMS PARAM NOT IMPLEMETED YET!
-
-	//params to avoid hitting any other entities
-	if(EntityManager *e = worldLevel::entityManager()){
-		//ignoreParams = e->getIgnoredRaycastParams(); //example for getting all
-		ignoreParams = e->getIgnoredRaycastParams(getTeam());
-	}*/
-	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility);
-	
-
-
-
-	//anything was hit
-	if (bHit){
-		outputHit = HitResult.ImpactPoint; //write impactpoint to output
-
-		
-		
-		//DebugHelper::showScreenMessage("RAYCAST HIT");
-
-		return true;
-	}
-
-	return false;
-}
 
 void AIkActor::getWeaponOnStart(){
 	EntityManager *e = worldLevel::entityManager();
@@ -219,12 +177,6 @@ void AIkActor::getWeaponOnStart(){
         Aweapon *w = e->spawnAweapon(GetWorld(), setuphelper);
 		//showScreenMessage("begin weapon");
 		if (w != nullptr){
-			//showScreenMessage("human pickup weapon");
-			
-			//kein pickup erstmal, managed by bone controller
-			//w->pickupBot(this);
-
-            //save pointer
             weaponPointer = w;
         }
 

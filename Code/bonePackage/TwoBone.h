@@ -122,7 +122,7 @@ private:
 	float rollAngleTo(FVector &localTarget);
 
 	float pitchAngleToInitialLookDirOfBone(FVector &localTarget);
-	float pitchAngleToInitiaToUpDirOfBone(FVector &localTarget);
+	
 
 	
 

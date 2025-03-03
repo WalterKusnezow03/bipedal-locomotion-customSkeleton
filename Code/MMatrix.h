@@ -54,6 +54,8 @@ public:
 	static MMatrix createRotatorFrom(FVector &other);
 	static MMatrix createRotatorFrom(FVector &other, FVector2D XAxis, FVector2D ZAxis);
 
+
+
 	void resetRotation();
 
 	void rotate(MMatrix &other);

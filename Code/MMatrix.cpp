@@ -445,14 +445,6 @@ MMatrix MMatrix::createRotatorFrom(FVector &other, FVector2D XAxis, FVector2D ZA
 
 
 
-
-
-
-
-
-
-
-
 float MMatrix::unsignedAngleRadBetween(FVector2D &a, FVector2D &b){
     a = a.GetSafeNormal();
     b = b.GetSafeNormal();
