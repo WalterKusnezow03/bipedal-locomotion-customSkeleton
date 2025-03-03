@@ -444,10 +444,12 @@ void BoneController::drawBody(float DeltaTime){
 
 	DeltaTime *= 1.1f;
 
+	/*
 	DebugHelper::showLineBetween(GetWorld(), com, shoulder1.getTranslation(), FColor::Red, DeltaTime);
 	DebugHelper::showLineBetween(GetWorld(), com, shoulder2.getTranslation(), FColor::Red, DeltaTime);
 	DebugHelper::showLineBetween(GetWorld(), com, foot1.getTranslation(), FColor::Red, DeltaTime);
 	DebugHelper::showLineBetween(GetWorld(), com, foot2.getTranslation(), FColor::Red, DeltaTime);
+	*/
 }
 
 
@@ -546,7 +548,7 @@ void BoneController::updateRotation(float signedAngle){
 		ALIGNHIP_FLAG = true;
 		lookAtPendingAngle = signedAngle;
 
-		DebugHelper::showScreenMessage("new rotation", lookAtPendingAngle);
+		//DebugHelper::showScreenMessage("new rotation", lookAtPendingAngle);
 	}
 }
 
@@ -921,7 +923,7 @@ void BoneController::TickLocomotion(float DeltaTime){
 
 			//die hip wurde mit dem anderen bein bewegt /(leg 1, also muss leg2 geupdated werden)
 			FVector footPos = ownLocationFoot2.getTranslation();
-			DebugHelper::showLineBetween(world, footPos, currentTransform(FOOT_2).getTranslation(), FColor::Orange, 2.0f);
+			//DebugHelper::showLineBetween(world, footPos, currentTransform(FOOT_2).getTranslation(), FColor::Orange, 2.0f);
 			transformFromWorldToLocalCoordinates(footPos, FOOT_2);
 			legDoubleKeys_2.overrideCurrentStartingFrame(footPos); //update starting pos of the foot because the actor moved
 	
@@ -938,7 +940,7 @@ void BoneController::TickLocomotion(float DeltaTime){
 
 			//die hip wurde mit dem anderen bein bewegt /(leg 2, also muss leg1 geupdated werden)
 			FVector footPos = ownLocationFoot1.getTranslation();
-			DebugHelper::showLineBetween(world, footPos, currentTransform(FOOT_1).getTranslation(), FColor::Orange, 2.0f);
+			//DebugHelper::showLineBetween(world, footPos, currentTransform(FOOT_1).getTranslation(), FColor::Orange, 2.0f);
 			
             transformFromWorldToLocalCoordinates(footPos, FOOT_1);
 			legDoubleKeys_1.overrideCurrentStartingFrame(footPos); //update starting pos of the foot because the actor moved

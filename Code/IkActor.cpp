@@ -32,7 +32,7 @@ void AIkActor::BeginPlay()
 
 	
 	//testing rotation
-	//hipController.overrideRotationYaw(-89.9f); //-90 anim bug!
+	hipController.overrideRotationYaw(60.0f); //-90 anim bug!
 	//hipController.overrideRotationYaw(-90.0f); //close to -90 (-89.9999f)anim bug! bei
 	weaponPointer = nullptr;
 	hipController.setStateWalking();
@@ -74,7 +74,7 @@ void AIkActor::BeginPlay()
 	// debug testing meshes
 	float legScaleCM = hipController.legScale();
 	float armScaleCM = hipController.armScale();
-	
+
 	float legHalfScale = legScaleCM / 2.0f;
 	float armHalfScale = armScaleCM / 2.0f;
 
@@ -260,11 +260,6 @@ AActor *AIkActor::createLimbPivotAtTop(int x, int y, int height, int pushFront){
 	/**
 	 * DEBUG CREATE FOLLOW LIMBS
 	 */
-	UMaterial *material = nullptr;
-	assetManager *assetManagerPointer = assetManager::instance();
-	if(assetManagerPointer != nullptr){
-		material = assetManagerPointer->findMaterial(materialEnum::wallMaterial);
-	}
 
 	EntityManager *entitymanagerPointer = worldLevel::entityManager();
 	if(entitymanagerPointer != nullptr){
@@ -290,7 +285,7 @@ AActor *AIkActor::createLimbPivotAtTop(int x, int y, int height, int pushFront){
 
 			oberschenkel->createCube(
 				a,b,c,d,at,bt,ct,dt,
-				material
+				materialEnum::wallMaterial
 			);
 			return oberschenkel;
 		}

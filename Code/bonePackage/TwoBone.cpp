@@ -328,6 +328,7 @@ void TwoBone::rotateEndToTarget(
     middle.resetRotation();
     end.resetRotation();
 
+
     /**
      * Top view yaw rotation of weight
      * 
@@ -339,19 +340,14 @@ void TwoBone::rotateEndToTarget(
     }
 
     //verbessert den arm bug aber behebt ihn nicht ganz
-    if(isArmBone()){
-        float yawAngle = yawAngleTo(vec); //arm in korrekte richtung eindrehen, dann heben
+    if(isArmBone()){ //DEBUG
         
-        //normalisieren, nicht überdrehen
-        float inDeg = MMatrix::radToDegree(yawAngle);
-        float sign = inDeg < 0.0f ? -1.0f : 1.0f;
-        inDeg = std::abs(inDeg);
-        if (inDeg > 80.0f)
-        {
-            yawAngle = MMatrix::degToRadian(180.0f - inDeg) * sign;
-            //yawAngle = MMatrix::degToRadian(90.0f) * sign;
-        }
-        start.yawRadAdd(yawAngle);
+        //new global start rotator testing
+        MMatrix rotator = MMatrix::createRotatorFrom(vec, FVector2D(1, 0), FVector2D(0, -1));
+        start *= rotator;
+
+
+
     }
 
     
@@ -400,9 +396,20 @@ void TwoBone::rotateEndToTarget(
     //die matrix zeigt zunächst immer nach unten, so ist der limb im konstruktor definiert
     //und so muss auch die rotation gefunden werden, egal ob vorwärts
     //oder rückwärts! Der winkel ist beide male korrekt!
-    float pitchAngle = pitchAngleToInitialLookDirOfBone(vec); 
+    
+    //test
+    if(!isArmBone()){
+        float pitchAngle = pitchAngleToInitialLookDirOfBone(vec); 
+        float globalSideAdd = createHipAngle(pitchAngle);
+        start.pitchRadAdd(globalSideAdd);
+    
+    }
+    //old
+    /*float pitchAngle = pitchAngleToInitialLookDirOfBone(vec); 
     float globalSideAdd = createHipAngle(pitchAngle);
-    start.pitchRadAdd(globalSideAdd);
+    start.pitchRadAdd(globalSideAdd);*/
+    
+
     
 
 
