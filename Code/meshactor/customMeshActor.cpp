@@ -9,6 +9,8 @@
 #include "p2/meshgen/generation/bezierCurve.h"
 #include "p2/meshgen/foliage/MatrixTree.h"
 #include "p2/meshgen/foliage/ETreeType.h"
+#include "p2/util/FVectorUtil.h"
+#include <set>
 #include "customMeshActor.h"
 
 
@@ -77,16 +79,15 @@ void AcustomMeshActor::setMaterialAndHealthAndSplitOnDeath(materialEnum mat, int
 /// @brief will allow custom emsh actors such as destructables and terrain react to damage
 /// @param d 
 void AcustomMeshActor::takedamage(int d){
+    //damage owner as this could be a kimb of an actor
+    if(damagedOwner != nullptr){
+        damagedOwner->takedamage(d);
+    }
 
     debugThis();
 
     EntityManager *entityManager = worldLevel::entityManager();
-
     if(entityManager != nullptr){
-        //in any case create debree?
-
-        FVector originPoint = GetActorLocation();
-        entityManager->createDebree(GetWorld(), originPoint, materialtypeSet);
 
         // destroy if possible
         if (isDestructable())
@@ -108,27 +109,27 @@ void AcustomMeshActor::takedamage(int d){
                 //not really despawn for now
                 AActorUtil::showActor(*this, false);
                 AActorUtil::enableColliderOnActor(*this, false);
-            
-                if(entityManager != nullptr){
-                    entityManager->add(this);
-                }
+                entityManager->add(this);
+
             }
         }
     }
 
-    
-    if(damagedOwner != nullptr){
-        damagedOwner->takedamage(d);
-    }
 }
 
 /// @brief allows tha ctor to react to damage from a origin
 /// @param d 
-/// @param from 
-void AcustomMeshActor::takedamage(int d, FVector &from){
+/// @param hitpoint hitpoint from weapon  
+void AcustomMeshActor::takedamage(int d, FVector &hitpoint){
     takedamage(d);
 
-    //angle of debree might be calculated from angle to normal for example
+
+    EntityManager *entityManager = worldLevel::entityManager();
+    if(entityManager != nullptr){
+        //in any case create debree
+        FVector originPoint = GetActorLocation();
+        entityManager->createDebree(GetWorld(), hitpoint, materialtypeSet);
+    }
 
 }
 
@@ -172,18 +173,20 @@ bool AcustomMeshActor::isDestructable(){
 /// @param map 2D vector of LOCAL coordinates!
 void AcustomMeshActor::createTerrainFrom2DMap(
     std::vector<std::vector<FVector>> &map,
-    bool createTrees    
+    bool createTrees,
+    ETerrainType typeIn
 ){ //nach dem entity manager stirbt die refenz hier!
+    thisTerrainType = typeIn;
 
     TArray<FVectorTouple> touples;
-    Super::createTerrainFrom2DMap(map, touples);
+    Super::createTerrainFrom2DMap(map, touples, typeIn);
 
     //must be called here.
     setMaterialBehaiviour(materialEnum::grassMaterial, false); //no split
     
-    DebugHelper::logMessage("debugCreateFoliage_terrain!");
+    //DebugHelper::logMessage("debugCreateFoliage_terrain!");
     if(createTrees){ //debug test
-        DebugHelper::logMessage("debugCreateFoliage");
+        //DebugHelper::logMessage("debugCreateFoliage");
         createFoliage(touples);
     }
 
@@ -262,57 +265,20 @@ void AcustomMeshActor::createCube(
     ReloadMeshAndApplyAllMaterials();
 }
 
-/*
-void AcustomMeshActor::createCube(
-    FVector &a, 
-    FVector &b,
-    FVector &c,
-    FVector &d,
-    FVector &a1, 
-    FVector &b1,
-    FVector &c1,
-    FVector &d1,
-    MeshData &cubeMesh
+
+
+
+
+
+void AcustomMeshActor::filterTouplesForVerticalVectors(
+    TArray<FVectorTouple> &touples,
+    std::vector<FVector> &potentialLocations
 ){
-    cubeMesh.appendEfficent(a, d, c, b);
-    cubeMesh.appendEfficent(a1, b1, c1, d1);
-    cubeMesh.appendEfficent(b, b1, a1, a);
-    cubeMesh.appendEfficent(c, c1, b1, b);
-    cubeMesh.appendEfficent(d, d1, c1, c);
-    cubeMesh.appendEfficent(a, a1, d1, d);
-    cubeMesh.calculateNormals();
-}
-*/
-
-
-
-
-
-
-
-
-
-
-
-/// @brief create foliage and append it to the output mesh data, the output mesh data will
-/// get its position from the actor. The touples expected to be in local coordinate system
-/// @param touples lcoation and normal in a touple
-/// @param outputAppend for example a terrain mesh to create trees on
-void AcustomMeshActor::createFoliage(TArray<FVectorTouple> &touples){
-    //MeshData meshDataStem;
-    //MeshData meshDataLeaf;
-    MeshData &meshDataStem = findMeshDataReference(materialEnum::treeMaterial, ELod::lodNear, true);
-    MeshData &meshDataLeaf = findMeshDataReference(materialEnum::palmLeafMaterial, ELod::lodNear, false); //noraycast
-
     // iterate over touples
     // determine normal angle and apply foliage, rocks, trees accordingly
     if (touples.Num() < 1){
         return;
     }
-
-
-    //saves the vertical locations to later choose random once and remove from list
-    std::vector<FVector> potentialLocations;
 
     //if normal faces towards up: flat area, create something
     for(FVectorTouple &t : touples){
@@ -323,6 +289,27 @@ void AcustomMeshActor::createFoliage(TArray<FVectorTouple> &touples){
             potentialLocations.push_back(location); 
         }
     }
+}
+
+/// @brief create foliage and append it to the output mesh data, the output mesh data will
+/// get its position from the actor. The touples expected to be in local coordinate system
+/// @param touples lcoation and normal in a touple
+/// @param outputAppend for example a terrain mesh to create trees on
+void AcustomMeshActor::createFoliage(TArray<FVectorTouple> &touples){
+    
+
+    // iterate over touples
+    // determine normal angle and apply foliage, rocks, trees accordingly
+    if (touples.Num() < 1){
+        return;
+    }
+
+    //saves the vertical locations to later choose random once and remove from list
+    std::vector<FVector> potentialLocations;
+    filterTouplesForVerticalVectors(
+        touples,
+        potentialLocations
+    );
 
     //create trees at random valid locations
     int limit = 3; //tree count
@@ -331,37 +318,24 @@ void AcustomMeshActor::createFoliage(TArray<FVectorTouple> &touples){
         int index = FVectorUtil::randomNumber(0, potentialLocations.size() - 1);
         if (index < potentialLocations.size() && index >= 0)
         {
-            createTreeAndSaveMeshTo(potentialLocations[index], meshDataStem, meshDataLeaf);
+            createTreeAndSaveToMesh(potentialLocations[index]);
             potentialLocations.erase(potentialLocations.begin() + index);
         }
     }
 
 
-    //updateMeshNoRaycastLayer(meshDataStem, false, layerByMaterialEnum(materialEnum::treeMaterial));
-    /*
-    updateMesh(meshDataStem, false, layerByMaterialEnum(materialEnum::treeMaterial));
-    ApplyMaterial(materialEnum::treeMaterial);
-
-    //different layer for meshes, no raycast / physics
-    updateMeshNoRaycastLayer(meshDataLeaf, false, layerByMaterialEnum(materialEnum::palmLeafMaterial));
-    ApplyMaterialNoRaycastLayer(materialEnum::palmLeafMaterial);
-    */
     ReloadMeshAndApplyAllMaterials();
 
 }
 
 
-/// @brief creates a matrix tree and appends the meshdata to the wanted output passed by reference
-/// @param location 
-/// @param meshDataStem 
-/// @param meshDataLeaf 
-void AcustomMeshActor::createTreeAndSaveMeshTo(
-    FVector &location, 
-    MeshData &meshDataStem, 
-    MeshData &meshDataLeaf
-){
+
+
+//new!
+
+void AcustomMeshActor::createTreeAndSaveToMesh(FVector &location){
     MatrixTree tree;
-    tree.generate(ETerrainType::ETropical); //1000 height, 100 step per matrix
+    tree.generate(thisTerrainType); //this terrain type now available
     
     MeshData &currentTreeStemMesh = tree.meshDataStemByReference();
     MeshData &currentLeafMesh = tree.meshDataLeafByReference();
@@ -369,9 +343,20 @@ void AcustomMeshActor::createTreeAndSaveMeshTo(
     currentTreeStemMesh.offsetAllvertecies(location);
     currentLeafMesh.offsetAllvertecies(location);
 
+    materialEnum stemTargetMaterial = currentTreeStemMesh.targetMaterial(); //very important to have!
+    materialEnum leafTargetMaterial = currentLeafMesh.targetMaterial();
+
+    MeshData &meshDataStem = findMeshDataReference(stemTargetMaterial, ELod::lodNear, true);
+    MeshData &meshDataLeaf = findMeshDataReference(leafTargetMaterial, ELod::lodNear, false); //noraycast
+
     meshDataStem.append(currentTreeStemMesh);
     meshDataLeaf.append(currentLeafMesh);
+    
 }
+
+
+
+
 
 
 
@@ -403,14 +388,18 @@ void AcustomMeshActor::splitIntoAllTriangles(){
             std::vector<MeshData> allTrianglesDoubleSided;
             meshFound.splitAllTrianglesInHalfAndSeperateMeshIntoAllTrianglesDoubleSided(allTrianglesDoubleSided);
 
-            createNewMeshActors(allTrianglesDoubleSided, currentMaterial);
+            createNewMeshActors(allTrianglesDoubleSided, currentMaterial, false);
         }
     }
 
         
 }
 
-void AcustomMeshActor::createNewMeshActors(std::vector<MeshData> &meshes, materialEnum material){
+void AcustomMeshActor::createNewMeshActors(
+    std::vector<MeshData> &meshes, 
+    materialEnum material,
+    bool splitOnDeathIn
+){
 
     FString message = FString::Printf(
         TEXT("DEBUGSPLIT CREATE: %d"), meshes.size()
@@ -443,8 +432,9 @@ void AcustomMeshActor::createNewMeshActors(std::vector<MeshData> &meshes, materi
             newActor->setMaterialBehaiviour(material, splitOnDeath); //split on death so kopieren!
             newActor->replaceMeshData(currentMeshData, material);
             newActor->ReloadMeshAndApplyAllMaterials();
-        }
 
+            newActor->splitOnDeath = splitOnDeathIn;
+        }
 
         //debugDraw
         TArray<FVector> verteciesRef = currentMeshData.getVerteciesRef();
