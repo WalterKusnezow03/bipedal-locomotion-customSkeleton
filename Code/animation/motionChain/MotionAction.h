@@ -27,6 +27,11 @@ public:
 	void setLocationAndRotation(FVector &pos, FRotator &rotator);
 	void setLocationAndRotation(MMatrix &transformMat);
 
+	void copyPositionSymetricalOnYZPane(
+		FVector &outLeft,
+		FVector &outRight
+	);
+
 private:
 	FVector targetLocation;
 	FRotator targetRotation;

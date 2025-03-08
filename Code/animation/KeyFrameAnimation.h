@@ -70,6 +70,10 @@ public:
 
 	void resetAnimationToStartAndResetRotation();
 
+
+	//new 
+	void useHermiteSplineInterpolation(bool flag);
+
 private:
 	void addRotationToFrame(FVector &localFrameToRotate);
 	bool rotateFramesBasedOnAngle = false;

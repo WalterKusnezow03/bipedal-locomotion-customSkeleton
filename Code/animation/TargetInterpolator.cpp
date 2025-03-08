@@ -15,6 +15,9 @@ TargetInterpolator::~TargetInterpolator()
 {
 }
 
+void TargetInterpolator::useHermiteSplineInterpolation(bool flag){
+    useHermiteSplineFlag = flag;
+}
 
 bool TargetInterpolator::hasTargetSetup(){
     return targetSetup;
@@ -174,8 +177,13 @@ FVector TargetInterpolator::interpolate(float DeltaTime){
     float skalarCurrent = skalar();
     
     FVector interpolated = TargetInterpolator::interpolation(from, target, skalarCurrent);
-    //FVector interpolated = interpolationBezier(skalarCurrent);
-    interpolated = HermiteInterpolate(skalarCurrent); //new debug test
+
+    if(useHermiteSplineFlag){
+        interpolated = HermiteInterpolate(skalarCurrent); //new debug test
+    }
+
+
+    
 
 
 

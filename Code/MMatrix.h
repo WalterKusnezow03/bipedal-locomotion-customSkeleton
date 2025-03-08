@@ -102,6 +102,8 @@ public:
 
 	void makeIdentity();
 
+	FString toString();
+
 private:
 	void set(int i, int j, float value);
 	float get(int column, int row);

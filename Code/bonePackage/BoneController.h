@@ -74,6 +74,9 @@ public:
 
 	void dropWeapon();
 
+	void openWingsuit();
+	void closeWingsuit();
+
 	bool canChangeStateNow();
 
 
@@ -309,9 +312,8 @@ private:
 	bool climb_hand1cycleComplete = false;
 	bool climb_setHandTarget = false;
 
-
-
-
+	bool wingsuitMarkedOpen = false;
+	
 
 	//new motion queue section
 	class MotionQueue armMotionQueue;

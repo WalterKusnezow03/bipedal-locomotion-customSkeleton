@@ -408,14 +408,21 @@ MMatrix MMatrix::createRotatorFrom(FRotator &other){
 }
 
 
-/// @brief creates the rotator from a given vector in pitch and yaw rotation!
+/// @brief creates the rotator from a given vector in pitch and yaw rotation! caution: both relative axis of measurement
+/// are the x axis for yaw and pitch!! (1,0) (1,0)!!
 /// @param other vector (direction) - will be normalized internally.
 /// @return rotator matrix
 MMatrix MMatrix::createRotatorFrom(FVector &other){
-    FVector2D axis(1.0f, 0); //default axis, x nach vorne schauend
-    return createRotatorFrom(other, axis, axis); 
+    FVector2D Xaxis(1.0f, 0); //default axis, x nach vorne schauend
+    return createRotatorFrom(other, Xaxis, Xaxis); 
 }
 
+
+/// @brief 
+/// @param other 
+/// @param XAxis axis to measure yaw agains
+/// @param ZAxis axis to measure pitch against
+/// @return 
 MMatrix MMatrix::createRotatorFrom(FVector &other, FVector2D XAxis, FVector2D ZAxis){
     FVector normalized = other.GetSafeNormal();
 
@@ -968,3 +975,6 @@ void MMatrix::rotateVectorRad2D(float angleRad, FVector2D &vector){
     vector.X = x;
     vector.Y = y;
 }
+
+
+

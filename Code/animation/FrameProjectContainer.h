@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "p2/entities/customIk/bonePackage/BoneControllerStates.h"
 #include "p2/entities/customIk/MMatrix.h"
 
 /**

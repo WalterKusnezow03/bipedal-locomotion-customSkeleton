@@ -64,9 +64,12 @@ public:
 	void overrideStartWorld(FVector targetIn);
 	void overrideTargetWorld(FVector targetIn);
 	void overrideStartWorldSpeedRelative(FVector newStart, MMatrix &actor);
-	
+
+	void useHermiteSplineInterpolation(bool flag);
 
 protected:
+	bool useHermiteSplineFlag = true; //true by default
+
 	FVector from;
 	FVector target;
 

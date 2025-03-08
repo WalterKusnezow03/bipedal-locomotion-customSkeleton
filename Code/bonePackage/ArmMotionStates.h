@@ -13,5 +13,6 @@ enum class ArmMotionStates
     holsterItem, //needed for moving item somewhere
     handsFollowItem, //needed for arms holding something
     kontaktStellung,
-    running
+    running,
+    wingsuitOpen
 };

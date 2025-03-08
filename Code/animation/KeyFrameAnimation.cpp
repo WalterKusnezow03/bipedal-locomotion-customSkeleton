@@ -32,7 +32,9 @@ KeyFrameAnimation::~KeyFrameAnimation()
 
 
 
-
+void KeyFrameAnimation::useHermiteSplineInterpolation(bool flag){
+    interpolator.useHermiteSplineInterpolation(flag);
+}
 
 /// @brief add a frame to the animation at a position and distance to previous frame
 /// @param position position for frame
