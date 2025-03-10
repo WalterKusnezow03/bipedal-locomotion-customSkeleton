@@ -104,7 +104,7 @@ public:
 
 protected:
 	bool DEBUG_enabled = false;
-	void debugThis();
+	void debugThis(FVector &hitpoint);
 
 	int health = 100;
 	bool destructableBool = false;
@@ -117,14 +117,14 @@ protected:
 	class IDamageinterface *damagedOwner = nullptr;
 
 
-	void createFoliage(TArray<FVectorTouple> &touples);
+	void createFoliageAndPushNodesAroundFoliageToNavMesh(TArray<FVectorTouple> &touples);
 
 	void createTreeAndSaveToMesh(FVector &location);
 
 	materialEnum materialtypeSet = materialEnum::grassMaterial;
 
-	void filterTouplesForVerticalVectors(
-		TArray<FVectorTouple> &touples,
-		std::vector<FVector> &potentialLocations
-	);
+
+	//shader
+	std::vector<materialEnum> foliageMaterials();
+	
 };

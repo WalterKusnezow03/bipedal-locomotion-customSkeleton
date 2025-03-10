@@ -35,7 +35,6 @@ void AcustomMeshActor::BeginPlay()
 void AcustomMeshActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AcustomMeshActor::setDamagedOwner(IDamageinterface *damagedOwnerIn){
@@ -84,7 +83,6 @@ void AcustomMeshActor::takedamage(int d){
         damagedOwner->takedamage(d);
     }
 
-    debugThis();
 
     EntityManager *entityManager = worldLevel::entityManager();
     if(entityManager != nullptr){
@@ -122,6 +120,8 @@ void AcustomMeshActor::takedamage(int d){
 /// @param hitpoint hitpoint from weapon  
 void AcustomMeshActor::takedamage(int d, FVector &hitpoint){
     takedamage(d);
+
+    debugThis(hitpoint);
 
 
     EntityManager *entityManager = worldLevel::entityManager();
@@ -183,14 +183,18 @@ void AcustomMeshActor::createTerrainFrom2DMap(
 
     //must be called here.
     setMaterialBehaiviour(materialEnum::grassMaterial, false); //no split
+
+    
     
     //DebugHelper::logMessage("debugCreateFoliage_terrain!");
     if(createTrees){ //debug test
         //DebugHelper::logMessage("debugCreateFoliage");
-        createFoliage(touples);
+        createFoliageAndPushNodesAroundFoliageToNavMesh(touples);
+    }else{
+        Super::addRandomNodesToNavmesh(touples);
     }
 
-
+    enableDebug(); //DEBUG WISE FOR MESH DESTRUCTION!
 }
 
 
@@ -270,32 +274,14 @@ void AcustomMeshActor::createCube(
 
 
 
-void AcustomMeshActor::filterTouplesForVerticalVectors(
-    TArray<FVectorTouple> &touples,
-    std::vector<FVector> &potentialLocations
-){
-    // iterate over touples
-    // determine normal angle and apply foliage, rocks, trees accordingly
-    if (touples.Num() < 1){
-        return;
-    }
-
-    //if normal faces towards up: flat area, create something
-    for(FVectorTouple &t : touples){
-        FVector &location = t.first();
-        FVector &normal = t.second();
-        bool facingUpwards = FVectorUtil::directionIsVertical(normal);
-        if(facingUpwards){
-            potentialLocations.push_back(location); 
-        }
-    }
-}
 
 /// @brief create foliage and append it to the output mesh data, the output mesh data will
 /// get its position from the actor. The touples expected to be in local coordinate system
 /// @param touples lcoation and normal in a touple
 /// @param outputAppend for example a terrain mesh to create trees on
-void AcustomMeshActor::createFoliage(TArray<FVectorTouple> &touples){
+void AcustomMeshActor::createFoliageAndPushNodesAroundFoliageToNavMesh(
+    TArray<FVectorTouple> &touples
+){
     
 
     // iterate over touples
@@ -306,24 +292,45 @@ void AcustomMeshActor::createFoliage(TArray<FVectorTouple> &touples){
 
     //saves the vertical locations to later choose random once and remove from list
     std::vector<FVector> potentialLocations;
-    filterTouplesForVerticalVectors(
+    Super::filterTouplesForVerticalVectors(
         touples,
         potentialLocations
     );
 
     //create trees at random valid locations
-    int limit = 3; //tree count
+    std::vector<FVector> pickedLocationsForNavmesh;
+
+    int limit = 3; // tree count
     for (int i = 0; i < limit; i++){
 
         int index = FVectorUtil::randomNumber(0, potentialLocations.size() - 1);
         if (index < potentialLocations.size() && index >= 0)
         {
-            createTreeAndSaveToMesh(potentialLocations[index]);
+            FVector vertex = potentialLocations[index];
+            pickedLocationsForNavmesh.push_back(vertex);
+            createTreeAndSaveToMesh(vertex);
             potentialLocations.erase(potentialLocations.begin() + index);
+            
         }
     }
 
 
+    //add all points around foliage to navmesh to allow the bots to move over the terrain better
+    if (PathFinder *f = PathFinder::instance(GetWorld()))
+    {
+        //um um 90 grad zu drehen, x und y tauschen, einen negieren
+        //(a,b) (-b,a) (-a,-b) (b, -a)
+        std::vector<FVector> offsets = {
+            FVector(100, 100, 70),
+            FVector(-100, 100, 70),
+            FVector(100, -100, 70),
+            FVector(-100, -100, 70),
+        };
+    
+        f->addNewNodeVector(pickedLocationsForNavmesh, offsets);
+    }
+    
+    
     ReloadMeshAndApplyAllMaterials();
 
 }
@@ -459,10 +466,61 @@ void AcustomMeshActor::enableDebug(){
     DEBUG_enabled = true;
 }
 
-void AcustomMeshActor::debugThis(){
+void AcustomMeshActor::debugThis(FVector &hitpoint){
     if(!DEBUG_enabled){
         return;
     }
 
-    
+    //world hit to local
+    FVector meshHit = hitpoint - GetActorLocation();
+    FQuat inverseRotation = GetActorQuat().Inverse();
+    FVector localHit = inverseRotation.RotateVector(meshHit);
+
+    std::vector<materialEnum> hitMaterials = {
+        materialEnum::grassMaterial,
+        materialEnum::redsandMaterial
+    };
+    for (int i = 0; i < hitMaterials.size(); i++){
+        MeshData &meshdata = findMeshDataReference(hitMaterials[i], ELod::lodNear, true);
+        int sizeHole = 100;
+
+        //cut push in
+        FVector direction(0, 0, -25);
+        meshdata.pushInwards(meshHit, sizeHole, direction); //error prone!
+
+        //meshdata.cutHoleWithInnerExtensionOfMesh(localHit, sizeHole); //cut sphere
+    }
+
+    /*
+    MeshData &meshdata = findMeshDataReference(materialEnum::stoneMaterial, ELod::lodNear, true);
+
+    int sizeHole = 50;
+    //meshdata.cutHoleWithInnerExtensionOfMesh(localHit, sizeHole); //cut sphere
+
+    //cut push in
+    FVector direction(0, 0, -100);
+    meshdata.pushInwards(meshHit, sizeHole, direction);*/
+
+    ReloadMeshAndApplyAllMaterials();
+}
+
+
+
+
+
+
+
+
+/**
+ * 
+ * 
+ * ----- shading function for foliage ------s
+ * 
+ * 
+ */
+std::vector<materialEnum> AcustomMeshActor::foliageMaterials(){
+    std::vector<materialEnum> output = {
+        materialEnum::palmLeafMaterial
+    };
+    return output;
 }

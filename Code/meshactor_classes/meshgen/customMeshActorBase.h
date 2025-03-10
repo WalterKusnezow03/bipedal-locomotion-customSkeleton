@@ -8,6 +8,8 @@
 #include <map>
 #include "MeshDataLod.h"
 #include "ELod.h"
+#include "p2/util/FVectorTouple.h"
+#include "p2/meshgen/foliage/ETerrainType.h"
 #include "customMeshActorBase.generated.h"
 
 UCLASS()
@@ -86,6 +88,13 @@ public:
 	);
 	
 protected:
+
+	void addRandomNodesToNavmesh(TArray<FVectorTouple> &touples);
+	void filterTouplesForVerticalVectors(
+		TArray<FVectorTouple> &touples,
+		std::vector<FVector> &potentialLocations
+	);
+
 	void appendLodTerrain(
 		std::vector<std::vector<FVector>> &map,
 		TArray<FVectorTouple> &touples, // MUST BE KEPT FOR SUBCLASS FOLIAGE CREATION!
@@ -129,16 +138,27 @@ protected:
 	
 
 
-	void ApplyMaterial(UProceduralMeshComponent *ProceduralMeshComponent, UMaterial *Material);
+	void ApplyMaterial(UProceduralMeshComponent *ProceduralMeshComponent, UMaterialInterface *Material);
 	void ApplyMaterial(
 		UProceduralMeshComponent *ProceduralMeshComponent,
-		UMaterial *Material,
+		UMaterialInterface *Material,
 		int layer
 	);
 
 	bool isInRange(FVector &a, int maxDistance);
 
 	ETerrainType thisTerrainType = ETerrainType::ETropical;
+
+	///new: refacture for moving meshes already in base actor
+	virtual void refreshMesh(
+		UProceduralMeshComponent &meshComponent,
+		MeshData &other,
+		int layer
+	);
+	float shaderRunningTime = 0.0f;
+	void TickShaderRunningTime(float time);
+	void vertexShaderFor(MeshData &data);
+	virtual void applyShaderToVertex(FVector &vertex);
 
 public:
 	static int layerByMaterialEnum(materialEnum type);

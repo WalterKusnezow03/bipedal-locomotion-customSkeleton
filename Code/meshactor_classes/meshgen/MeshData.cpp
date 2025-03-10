@@ -2,6 +2,16 @@
 
 
 #include "p2/meshgen/MeshData.h"
+#include "p2/entities/customIk/MMatrix.h"
+#include "p2/DebugHelper.h"
+#include "p2/meshgen/foliage/helper/GrahamScan.h"
+#include "p2/meshgen/foliage/helper/FVectorShape.h"
+#include "p2/meshgen/foliage/helper/ParallellShapeMerger.h"
+#include "p2/gameStart/assetEnums/materialEnum.h"
+#include "p2/meshgen/foliage/helper/baryCentricInterpolator.h"
+#include "p2/DebugHelper.h"
+
+#include <algorithm>
 #include <set>
 
 MeshData::MeshData()
@@ -64,6 +74,8 @@ MeshData& MeshData::operator=(const MeshData &other){
         for (int i = 0; i < other.VertexColors.Num(); i++){
             VertexColors.Add(other.VertexColors[i]);
         }
+
+        materialPreferred = other.materialPreferred;
     }
     return *this;
 }
@@ -92,7 +104,7 @@ void MeshData::clearNormals(){
 /// @brief calculates the normals and applies it to the vertecies
 void MeshData::calculateNormals(){
     
-    // Iteriere über die Dreiecke und berechne Normalen
+    
     clearNormals();
     normals.SetNum(vertecies.Num());
     for (int i = 0; i < triangles.Num() - 3; i += 3) {
@@ -136,6 +148,8 @@ void MeshData::append(MeshData &other)
     TArray<int32> &trianglesRef = other.getTrianglesRef();
     TArray<FVector> &normalsRef = other.getNormalsRef();
     join(verteciesRef, trianglesRef, normalsRef);
+
+    updateBoundsIfNeeded();
 }
 
 void MeshData::join(TArray<FVector> &verteciesRef, TArray<int32> &trianglesRef, TArray<FVector> &normalsin){
@@ -225,6 +239,24 @@ void MeshData::appendDoublesided(
 }
 
 
+void MeshData::appendDoubleSidedTriangleBuffer(
+    std::vector<FVector> &buffer
+){  
+    if(buffer.size() < 3){
+        return;
+    }
+
+    for (int i = 0; i < buffer.size() - 3; i += 3)
+    {
+        appendDoublesided(
+            buffer[i],
+            buffer[i + 1],
+            buffer[i + 2]
+        );
+    }
+}
+
+
 
 
 void MeshData::buildTriangle(
@@ -267,7 +299,30 @@ void MeshData::offsetAllvertecies(FVector &offset){
     for (int i = 0; i < vertecies.Num(); i++){
         vertecies[i] += offset;
     }
+
+    updateBoundsIfNeeded();
 }
+
+/// @brief transforms all vertecies with a given matrix
+/// @param other 
+void MeshData::transformAllVertecies(MMatrix &other){
+
+    //matrix für vertecies: M
+    for (int i = 0; i < vertecies.Num(); i++){
+        vertecies[i] = other * vertecies[i];
+    }
+
+    //matrix für normalen: (M^-1)^T !!!! NICHT VERGESSEN!
+    MMatrix M_inverse = other.createInverse();
+    M_inverse.transpose();
+    for (int i = 0; i < normals.Num(); i++){
+        normals[i] = M_inverse * normals[i];
+    }
+
+    updateBoundsIfNeeded();
+}
+
+
 
 
 
@@ -278,6 +333,7 @@ void MeshData::offsetAllvertecies(FVector &offset){
 /// this mesh data vertexcount is 0
 /// will connect to the latest vec.size() vertecies, gaps cannot be detected
 /// @param vec vector to connect, expected in some correct order 
+
 void MeshData::appendVertecies(std::vector<FVector> &vec){
     if(vec.size() <= 0){
         return;
@@ -316,22 +372,24 @@ void MeshData::appendVertecies(std::vector<FVector> &vec){
         0 3
         */
         // 1 triangle
+        if(true){
+            //das hier sieht eher nicht aus wie die 012 023 winding order, aber sie ist korrekt
+            //nach aussen gedreht
+            int next = (i + 1) % vec.size();
+            triangles.Add(startingIndex + i); //lower(0)
+            triangles.Add(startingIndex + next); //lower(3)
+            triangles.Add(offset + i); //upper(1)
+            
+            //2 triangle
+            triangles.Add(startingIndex + next); //lower (3)
+            triangles.Add(offset + next); //upper(2)
+            triangles.Add(offset + i); //upper (1)
+        }
         
-        int next = (i + 1) % vec.size();
-        triangles.Add(startingIndex + i); //lower(0)
-        triangles.Add(startingIndex + next); //lower(3)
-        triangles.Add(offset + i); //upper(1)
-        
-        //2 triangle
-        triangles.Add(startingIndex + next); //lower (3)
-        triangles.Add(offset + next); //upper(2)
-        triangles.Add(offset + i); //upper (1)
-        
-
     }
 
+    updateBoundsIfNeeded();
 }
-
 
 /**
  * caution: this function is not tested
@@ -339,6 +397,9 @@ void MeshData::appendVertecies(std::vector<FVector> &vec){
 /// @brief will fill up vertecies between the last two ones
 /// @param count 
 void MeshData::fillUpMissingVertecies(int count){
+    if(count <= 0){
+        return;
+    }
     int sizeOfVertexbuffer = vertecies.Num();
     count = std::abs(count);
     if(sizeOfVertexbuffer == 1){
@@ -350,7 +411,7 @@ void MeshData::fillUpMissingVertecies(int count){
         return;
     }
 
-    DebugHelper::logMessage("meshData_debug inserted vertecies");
+    //DebugHelper::logMessage("meshData_debug inserted vertecies");
 
     FVector last = vertecies[sizeOfVertexbuffer - 1];
     FVector prev = vertecies[sizeOfVertexbuffer - 2];
@@ -365,9 +426,11 @@ void MeshData::fillUpMissingVertecies(int count){
     vertecies.Add(last);
 
     //fix triangle buffer offset because of insert
-    for (int i = 0; i < triangles.Num(); i++){
-        if(triangles[i] == sizeOfVertexbuffer - 1){
-            triangles[i] = triangles.Num() - 1;
+    int vertexIndexTargeted = sizeOfVertexbuffer - 1;
+    for (int i = 0; i < triangles.Num(); i++)
+    {
+        if(triangles[i] == vertexIndexTargeted){
+            triangles[i] = vertecies.Num() - 1;
         }
     }
 }
@@ -382,33 +445,6 @@ void MeshData::closeMeshAtCenter(FVector &center, std::vector<FVector> &vec, boo
     closeMeshAtCenter(center, vec.size(), clockWise);
     return;
 
-    //old
-    /*
-    int32 offset = vertecies.Num();
-    vertecies.Add(center); //jetzt offset index valid 
-    for (int i = 0; i < vec.size(); i++){
-        vertecies.Add(vec[i]);
-    }
-    for (int i = 0; i < vec.size(); i++){
-        int next = (i + 1) % vec.size();
-        if(clockWise){
-            / *
-            1 2
-            0
-            * /
-            triangles.Add(offset); //0
-            triangles.Add(offset + i); //1
-            triangles.Add(offset + next); //2
-        }else{
-            / *
-            2 1
-            0
-            * /
-           triangles.Add(offset); //0
-           triangles.Add(offset + next); //2
-           triangles.Add(offset + i); //1
-        }
-    }*/
 }
 
 void MeshData::closeMeshAtCenter(FVector &center, int bufferSizeToConnect, bool clockWise){
@@ -471,7 +507,7 @@ int MeshData::findClosestIndexTo(FVector &vertex){
 
     for (int i = 1; i < vertecies.Num(); i++){
         float newDist = FVector::Dist(vertex, vertecies[i]);
-        if(newDist < dist){
+        if(newDist < dist){ //debug keep distance
             dist = newDist;
             closestIndex = i;
         }
@@ -487,9 +523,36 @@ bool MeshData::isCloseSame(FVector &a, int index){
 }
 
 bool MeshData::isCloseSame(FVector &a, FVector &b){
-    return std::abs(a.X - b.X) < EPSILON &&
-           std::abs(a.Y - b.Z) < EPSILON &&
-           std::abs(a.Z - b.Z) < EPSILON;
+    return std::abs(a.X - b.X) <= EPSILON &&
+           std::abs(a.Y - b.Y) <= EPSILON &&
+           std::abs(a.Z - b.Z) <= EPSILON;
+}
+
+
+
+int MeshData::findClosestIndexToAndAvoid(FVector &vertex, int indexAvoid){
+    std::vector<int> vec = {indexAvoid};
+    return findClosestIndexToAndAvoid(vertex, vec);
+}
+
+int MeshData::findClosestIndexToAndAvoid(FVector &vertex, std::vector<int> &avoid){
+    if(vertecies.Num() == 0){
+        return -1;
+    }
+    int closestIndex = 0;
+    float dist = FVector::Dist(vertex, vertecies[0]);
+
+    for (int i = 1; i < vertecies.Num(); i++){
+
+        if(!contains(avoid, i)){
+            float newDist = FVector::Dist(vertex, vertecies[i]);
+            if(newDist < dist){ //debug keep distance
+                dist = newDist;
+                closestIndex = i;
+            }
+        }
+    }
+    return closestIndex;
 }
 
 
@@ -553,6 +616,8 @@ void MeshData::appendEfficent(
         FString message = FString::Printf(TEXT("meshdata efficentAdded %d"), debugEfficentAdded);
         DebugHelper::logMessage(message);
     }
+
+    updateBoundsIfNeeded();
 }
 
 
@@ -616,6 +681,10 @@ FVector MeshData::createNormal(int v0, int v1, int v2){
 
 bool MeshData::isValidVertexIndex(int i){
     return i >= 0 && i < vertecies.Num();
+}
+
+bool MeshData::isValidVertexIndex(int i, int j, int n){
+    return isValidVertexIndex(i) && isValidVertexIndex(j) && isValidVertexIndex(n);
 }
 
 bool MeshData::isValidTriangleIndex(int i){
@@ -685,9 +754,7 @@ void MeshData::seperateMeshIntoAllTrianglesDoubleSided(std::vector<MeshData> &me
         int32 Index2 = triangles[i + 2];
 
         if(
-            isValidVertexIndex(Index0) && 
-            isValidVertexIndex(Index1) &&
-            isValidVertexIndex(Index2)
+            isValidVertexIndex(Index0, Index1, Index2)
         ){
             FVector &v0 = vertecies[Index0];
             FVector &v1 = vertecies[Index1];
@@ -729,7 +796,7 @@ void MeshData::splitAllTrianglesInHalfAndSeperateMeshIntoAllTrianglesDoubleSided
             newTriangleMeshB.calculateNormals();
             meshDataVectorOutput.push_back(newTriangleMeshB);
         }else{
-            DebugHelper::logMessage("DEBUGSPLIT could not split");
+            //DebugHelper::logMessage("DEBUGSPLIT could not split");
         }
     }
 
@@ -774,6 +841,419 @@ void MeshData::centerMesh(){
 
 
 
+/**
+ * 
+ * -- mesh cutting helpers --
+ * 
+ */
+
+//not tested
+void MeshData::cutHoleWithInnerExtensionOfMesh(
+    FVector &vertex, int radius
+){
+
+    //ERST cut, dann append(?)
+    std::vector<FVector> outOfRangeVertecies;
+    cutHole(vertex, radius, outOfRangeVertecies);
+    if(outOfRangeVertecies.size() == 0){
+        return;
+    }
+
+    //achtung: vertecies müssen durch 2 teilbar sein sodass der helbkreis korrekt
+    //gespaltet wird (?)
+    if(outOfRangeVertecies.size() % 2 != 0){
+        FVector &ownBack = outOfRangeVertecies.back();
+        outOfRangeVertecies.push_back(ownBack);
+    }
+
+    //find rotation of direction to rotate the halfsphere as needed
+    FVector centerOfMesh = center();
+    //FVector connect = centerOfMesh - vertex; //AB = B - A ---> vertex to center inside
+    FVector connect(0, 0, 1);
+    int indexClose = findClosestIndexTo(vertex);
+    if (isValidNormalIndex(indexClose))
+    {
+        connect = normals[indexClose] * -1; //inward
+    }
+
+    std::vector<FVector> outlineOfHalfSphere; //online of open side!
+    int detailPerCircle = outOfRangeVertecies.size();
+
+    //fill missing detial (temporary solution)
+    if(detailPerCircle < 8){
+        int missing = 8 - detailPerCircle;
+        int betweenExtra = missing / detailPerCircle;
+        if(betweenExtra == 0){
+            betweenExtra = 1;
+        }
+        betweenExtra += 1; //dass bei 1 extra, auch einer dazukommt.
+
+        std::vector<FVector> modifiedOutOfRange;
+        for (int i = 0; i < outOfRangeVertecies.size(); i++)
+        {
+            FVector &start = outOfRangeVertecies[i];
+            FVector &end = outOfRangeVertecies[(i+1) % outOfRangeVertecies.size()];
+            FVector connectScaled = end - start;
+            connectScaled /= betweenExtra;
+            for (int j = 0; j < betweenExtra; j++){
+                FVector interpolated = start + connectScaled * j;
+                modifiedOutOfRange.push_back(interpolated);
+            }
+        }
+        outOfRangeVertecies = modifiedOutOfRange;
+    }
+    //fill missing detial (temporary solution) end
+
+
+    MeshData sphere = FVectorShape::createHalfSphereCuttedOff(
+        radius,
+        detailPerCircle, //detail per full circle
+        false, //false for face inside
+        connect, // normal inwards to rotate half sphere / align with it
+        outlineOfHalfSphere,
+        MMatrix(vertex) // move to vertex pos
+    );
+
+
+
+    //mergen und anhängen den gefüllten kreis
+    ParallellShapeMerger merger;
+    merger.createParallelSortedShape(
+        outlineOfHalfSphere,
+        outOfRangeVertecies
+    );
+    std::vector<FVector> &bufferReference = merger.triangleBufferReference();
+    appendDoubleSidedTriangleBuffer(bufferReference);
+
+
+
+    //append sphere
+    //appendEfficent(sphere);
+    append(sphere);
+
+    calculateNormals();
+    
+    
+}
+
+
+
+///@brief will cut a hole in a radius at a vertex position
+///@param outOfRangeVertecies will save vertecies which were not cutted out
+///but were connected to the cutted out vertecies
+void MeshData::cutHole(FVector &vertex, int radius, std::vector<FVector> &outOfRangeVertecies) //connected out of range
+{
+    radius = std::abs(radius);
+    int index = findClosestIndexTo(vertex);
+    if (isValidVertexIndex(index))
+    {
+        FVector removedVertex = vertecies[index];
+
+        //delete connected triangles, does change the triangle buffer but not the
+        //vertex buffer
+        //remove vertex by swapping with end and change the triangle buffer as needed
+        //(update the indices in the triangle buffer)
+        std::vector<int> connectedvertecies;
+        removeVertex(index, connectedvertecies);
+
+        int debugCount = 1;
+
+        //cut recursivly until distance reached
+        int i = 0;
+        int size = connectedvertecies.size();
+        while(i < size){
+            int currentVertexIndex = connectedvertecies[i];
+            if(isValidVertexIndex(currentVertexIndex)){
+                FVector &currentVertex = vertecies[currentVertexIndex];
+                float dist = FVector::Dist(currentVertex, removedVertex);
+
+                if(dist < radius){
+                    removeVertex(currentVertexIndex, connectedvertecies);
+                    debugCount++;
+
+                    //update size
+                    size = connectedvertecies.size();
+                }else{
+                    //for appending some shape
+                    outOfRangeVertecies.push_back(currentVertex);
+                }
+            }
+            i++;
+        }
+
+        //FString message = FString::Printf(TEXT("debugremoved vertecies %d"), debugCount);
+        //DebugHelper::logMessage(message);
+    }
+}
+
+///@brief removes out a vertex from the mesh
+void MeshData::removeVertex(int index){
+    std::vector<int> ignored;
+    removeVertex(index, ignored);
+}
+
+///@brief removes out a vertex from the mesh data by index and:
+///@param connectedvertecies saves the connected vertecies defined by the triangle buffer
+void MeshData::removeVertex(int index, std::vector<int>& connectedvertecies){
+
+    if(isValidVertexIndex(index) && vertecies.Num() > 0){
+        removeTrianglesInvolvedWith(index, connectedvertecies);
+
+        //remove vertex by swapping with end and change the triangle buffer as needed
+        int oldEnd = vertecies.Num() - 1;
+        vertecies[index] = vertecies[oldEnd]; //index der removed wird nach hinten tauschen
+        vertecies.Pop(); // pop back end which is in new pos now
+        if(isValidNormalIndex(index) && isValidNormalIndex(oldEnd)){
+            normals[index] = normals[oldEnd];
+            normals.Pop();
+        }
+
+        //(update the indices in the triangle buffer because the vertex has changed)
+        for (int i = 0; i < triangles.Num(); i++){
+            if(triangles[i] == oldEnd){
+                triangles[i] = index; //update weil swap
+            }
+        }
+
+        //find old end in connected vertecies and replace the index
+        for (int i = 0; i < connectedvertecies.size(); i++){
+            int vertexIndexNow = connectedvertecies[i];
+            if(oldEnd == vertexIndexNow){
+                connectedvertecies[i] = index; //update weil swap
+            }
+        }
+    }
+}
+
+///@brief removes all triangles from the triangle buffer by vertex index and
+///@param connectedvertecies saves the connected vertecies for processing
+void MeshData::removeTrianglesInvolvedWith(int vertexIndex, std::vector<int> &connectedvertecies){
+    if(!isValidVertexIndex(vertexIndex)){
+        return;
+    }
+    TArray<int32> triangleBufferCopy;
+    for (int i = 0; i < triangles.Num() - 3; i += 3)
+    {
+        int32 v0 = triangles[i];
+        int32 v1 = triangles[i+1];
+        int32 v2 = triangles[i+2];
+
+        bool v0ok = (v0 != vertexIndex);
+        bool v1ok = (v1 != vertexIndex);
+        bool v2ok = (v2 != vertexIndex);
+
+        if(v0ok && v1ok && v2ok){
+            triangleBufferCopy.Add(v0);
+            triangleBufferCopy.Add(v1);
+            triangleBufferCopy.Add(v2);
+        }else{
+            //dont copy the vertex which is removed
+            if(v0ok && !contains(connectedvertecies, v0)){
+                connectedvertecies.push_back(v0);
+            }
+            if(v1ok && !contains(connectedvertecies, v1)){
+                connectedvertecies.push_back(v1);
+            }
+            if(v2ok && !contains(connectedvertecies, v2)){
+                connectedvertecies.push_back(v2);
+            }
+            
+        }
+    }
+    triangles = triangleBufferCopy;
+}
+
+
+bool MeshData::contains(std::vector<int> &ref, int index){
+    for (int i = 0; i < ref.size(); i++){
+        if(ref[i] == index){
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+/**
+ * 
+ * 
+ * mesh deform no remove helper
+ * 
+ * 
+ */
+void MeshData::pushInwards(FVector &location, int radius, FVector scaleddirection){
+    if(vertecies.Num() == 0){
+        return;
+    }
+
+    radius = std::abs(radius);
+
+    std::vector<int> connected;
+    int index = findClosestIndexTo(location);
+    if(!isValidVertexIndex(index)){
+        return;
+    }
+    FVector foundLocation = vertecies[index];
+
+    findConnectedVerteciesTo(index, connected);
+
+    //recursivly find all connected vertecies from the triangle buffer
+    int i = 0;
+    int size = connected.size();
+    while(i < size){
+        if(i < connected.size()){
+            int currentIndex = connected[i];
+            if(isValidVertexIndex(currentIndex)){
+                FVector &currentVertex = vertecies[currentIndex];
+                float dist = FVector::Dist(currentVertex, foundLocation);
+                if(dist < radius){
+                    findConnectedVerteciesTo(currentIndex, connected);
+                    size = connected.size();
+                }
+            }
+        }
+
+        i++;
+    }
+
+
+    // apply scaled offset direction
+    for (int j = 0; j < connected.size(); j++)
+    {
+        int currentIndex = connected[j];
+        if (isValidVertexIndex(currentIndex))
+        {
+            FVector &vertex = vertecies[currentIndex];
+            if(isInsideBoundingbox(vertex)){
+                vertex += scaleddirection;
+            }
+            
+        }
+    }
+
+}
+
+void MeshData::findConnectedVerteciesTo(int index, std::vector<int> &output){
+    
+    for (int i = 0; i < triangles.Num() - 3; i += 3)
+    {
+        int v0 = triangles[i];
+        int v1 = triangles[i+1];
+        int v2 = triangles[i+2];
+        if(v0 == index || v1 == index || v2 == index){
+            if (!contains(output, v0)){
+                output.push_back(v0);
+            }
+            if (!contains(output, v1)){
+                output.push_back(v1);
+            }
+            if (!contains(output, v2)){
+                output.push_back(v2);
+            }
+        }
+    }
+}
+
+
+
+
+/**
+ * 
+ * foliage helper
+ * 
+ */
+materialEnum MeshData::targetMaterial(){
+    return materialPreferred;
+}
+void MeshData::setTargetMaterial(materialEnum inMaterial){
+    materialPreferred = inMaterial;
+}
+
+
+
+/// @brief generates the matricies to move an object to the vertex position
+/// and rotate in look dir of normal. CAUTION: X axis is forward! The rotation block is
+/// in yaw and pitch rotation relative to the XAxis! (1,0,0), orient your mesh accordingly
+/// if you are using this methods to place a mesh on a surface for example!
+/// @param output 
+void MeshData::generateMatricesPerFaceAndLookDirOfNormal(
+    std::vector<MMatrix> &output
+){
+    for (int i = 0; i < triangles.Num() - 3; i+= 3){
+        int v0 = triangles[i];
+        int v1 = triangles[i+1];
+        int v2 = triangles[i+2];
+        if(isValidVertexIndex(v0, v1, v2)){
+            FVector &vertex0 = vertecies[v0];
+            FVector &vertex1 = vertecies[v1];
+            FVector &vertex2 = vertecies[v2];
+
+            FVector v0v1 = vertex1 - vertex0; // AB = B - A;
+            FVector v0v2 = vertex2 - vertex0;
+            FVector normal = FVector::CrossProduct(v0v1, v0v2);
+            normal = normal.GetSafeNormal();
+
+
+            MMatrix rotator = MMatrix::createRotatorFrom(normal);
+            //debug
+            if(false){
+                FVector axis(1, 0, 0);
+                axis = rotator * axis;
+                DebugHelper::logMessage("debug comparenormal", axis, normal); //works correct!
+            }
+            // debug end
+
+            MMatrix translation;
+            FVector center = (vertex0 + vertex1 + vertex2) / 3;
+            translation.setTranslation(center);
+
+            //translation.setTranslation(vertex0); //debug
+
+            MMatrix TR = translation * rotator; //<-- lese richtung --
+    
+            output.push_back(TR);
+        }
+    }
+}
+
+
+
+void MeshData::generateMatricesPerFaceAndLookDirOfNormalInterpolated(
+    std::vector<MMatrix> &output,
+    int stepSize
+){
+
+
+    baryCentricInterpolator interpolator;
+    for (int i = 0; i < triangles.Num() - 3; i+= 3){
+        int v0 = triangles[i];
+        int v1 = triangles[i+1];
+        int v2 = triangles[i+2];
+        if(isValidVertexIndex(v0, v1, v2)){
+            FVector &vertex0 = vertecies[v0];
+            FVector &vertex1 = vertecies[v1];
+            FVector &vertex2 = vertecies[v2];
+
+            
+            interpolator.setup(vertex0, vertex1, vertex2);
+            std::vector<MMatrix> newMatrices;
+            interpolator.interpolateAllAsMatrixTransformToVertexAndLookOfNormal(
+                stepSize,
+                newMatrices
+            );
+
+            for (int j = 0; j < newMatrices.size(); j++){
+                output.push_back(newMatrices[j]);
+            }
+        }
+    }
+
+}
+
+
+
+
 
 /**
  * 
@@ -812,4 +1292,52 @@ void MeshData::appendCube(
     FVector c1 = c + orthogonalDir;
     FVector d1 = d + orthogonalDir;
     appendCube(a, b, c, d, a1, b1, c1, d1);
+}
+
+
+
+int MeshData::verteciesNum(){
+    return vertecies.Num();
+}
+
+void MeshData::updateBoundsIfNeeded(){
+    bottomLeftBound = FVector(0, 0, 0);
+    topRightBound = FVector(0, 0, 0);
+    for (int i = 0; i < vertecies.Num(); i++)
+    {
+        updateBoundsIfNeeded(vertecies[i]);
+    }
+}
+
+
+void MeshData::updateBoundsIfNeeded(FVector &other){
+    if(other.X < bottomLeftBound.X){
+        bottomLeftBound.X = other.X;
+    }
+    if(other.Y < bottomLeftBound.Y){
+        bottomLeftBound.Y = other.Y;
+    }
+    if(other.Z < bottomLeftBound.Z){
+        bottomLeftBound.Z = other.Z;
+    }
+
+    if(other.X > topRightBound.X){
+        topRightBound.X = other.X;
+    }
+    if(other.Y > topRightBound.Y){
+        topRightBound.Y = other.Y;
+    }
+    if(other.Z > topRightBound.Z){
+        topRightBound.Z = other.Z;
+    }
+}
+
+///@brief checks if a vertex is inside the bounding box, NOT allowing edge cases!
+bool MeshData::isInsideBoundingbox(FVector &other){
+    return other.X > bottomLeftBound.X &&
+           other.Y > bottomLeftBound.Y &&
+           other.Z > bottomLeftBound.Z &&
+           other.X < topRightBound.X &&
+           other.Y < topRightBound.Y &&
+           other.Z < topRightBound.Z;
 }

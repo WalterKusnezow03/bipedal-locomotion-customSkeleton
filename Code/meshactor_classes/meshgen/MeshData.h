@@ -3,6 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include <set>
+#include "p2/gameStart/assetEnums/materialEnum.h"
+#include "p2/entities/customIk/MMatrix.h"
 
 
 /**
@@ -13,7 +16,7 @@ class P2_API MeshData
 {
 public:
 	MeshData();
-	~MeshData();
+	virtual ~MeshData(); //automatischer aufruf aus subklasse
 
 	MeshData(TArray<FVector> &&verteciesIn, TArray<int> &&trianglesIn);
 	MeshData(const MeshData &other);
@@ -59,6 +62,10 @@ public:
 		FVector &d
 	);
 
+	void appendDoubleSidedTriangleBuffer(
+		std::vector<FVector> &buffer
+	);
+
 	void rebuild(TArray<FVector> &&verteciesIn, TArray<int> &&trianglesIn);
 
 	void clearMesh();
@@ -76,8 +83,10 @@ public:
 	TArray<FColor> &getVertexColorsRef();
 
 	void offsetAllvertecies(FVector &offset);
+	void transformAllVertecies(MMatrix &other);
 
 	void appendVertecies(std::vector<FVector> &vec);
+	
 
 	void closeMeshAtCenter(FVector &center, std::vector<FVector> &vec, bool clockWise);
 	void closeMeshAtCenter(FVector &center, int bufferSizeToConnect, bool clockWise);
@@ -113,11 +122,11 @@ public:
 		FVector orthogonalDir
 	);
 
-private:
-	float MIN_SPLITDISTANCE = 20.0f;
+protected:
+	float MIN_SPLITDISTANCE = 50.0f;
 	bool canSplit(FVector &a, FVector &b, FVector &c);
 
-	float EPSILON = 0.5f;
+	float EPSILON = 5.0f;
 	bool isCloseSame(FVector &a, FVector &b);
 	bool isCloseSame(FVector &a, int index);
 	
@@ -146,11 +155,60 @@ private:
 	TArray<FVector2D> UV0;
 
 	int findClosestIndexTo(FVector &vertex);
+	int findClosestIndexToAndAvoid(FVector &vertex, int indexAvoid);
+	int findClosestIndexToAndAvoid(FVector &vertex, std::vector<int> &avoid);
 
 	void join(TArray<FVector> &vertecies, TArray<int32> &triangles, TArray<FVector> &normalsin);
 
 	bool isValidVertexIndex(int i);
+	bool isValidVertexIndex(int i, int j, int n);
 	bool isValidTriangleIndex(int i);
 	bool isValidNormalIndex(int index);
 	FVector createNormal(int v0, int v1, int v2);
+
+	//helper for removing triangles by vertex
+	void removeVertex(int index);
+	void removeVertex(int index, std::vector<int> &connectedvertecies);
+	void removeTrianglesInvolvedWith(int vertexIndex, std::vector<int> &connectedvertecies);
+	bool contains(std::vector<int> &ref, int index);
+
+	
+
+public:
+	//helper for removing triangles by vertex
+	void cutHole(FVector &vertex, int radius, std::vector<FVector> &outOfRangeVertecies);
+	void cutHoleWithInnerExtensionOfMesh(FVector &vertex, int radius);
+
+	materialEnum targetMaterial();
+	void setTargetMaterial(materialEnum inMaterial);
+
+	void generateMatricesPerFaceAndLookDirOfNormal(std::vector<MMatrix> &output);
+
+	void generateMatricesPerFaceAndLookDirOfNormalInterpolated(
+		std::vector<MMatrix> &output,
+		int stepSize
+	);
+
+	int verteciesNum();
+
+
+	//helper for displacement
+	void pushInwards(FVector &location, int radius, FVector scaleddirection);
+
+	
+
+protected:
+	void findConnectedVerteciesTo(int index, std::vector<int> &output);
+
+	materialEnum materialPreferred = materialEnum::wallMaterial;
+
+
+
+	//bound
+	void updateBoundsIfNeeded();
+	void updateBoundsIfNeeded(FVector &other);
+	FVector bottomLeftBound;
+	FVector topRightBound;
+
+	bool isInsideBoundingbox(FVector &other);
 };

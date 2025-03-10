@@ -649,62 +649,6 @@ void TwoBone::rotateStartToTargetAndBuild( //works as expected
 
 
 
-/// @brief interpolates the matricies and returns the final output
-/// @param world 
-/// @param offsetAndRotation 
-/// @param color 
-/// @param displayTime 
-/// @param matrizen 
-/// @return 
-MMatrix TwoBone::buildWithOutput(
-    UWorld *world,
-    MMatrix &offsetAndRotation,
-    FColor color, 
-    float displayTime,
-    std::vector<MMatrix*> &matrizen //must not be empty
-){
-
-    
-
-    FVector endVec = toFootTip;
-    // getMatricies(matrizen, endVec);
-    if(matrizen.size() < 2){ // <2 weil mindestens ein knochen muss vorhanden sein
-        return offsetAndRotation;
-    }
-
-    std::vector<FVector> resultDraw;
-
-    MMatrix result = offsetAndRotation;
-    
-    //über matrizen laufen um die vektoren zu berechnen für die zeichnung
-    //beide sollen nicht mit gezeichnet werden
-    for (int i = 0; i < matrizen.size(); i++)
-    {
-        result *= *matrizen[i]; //durch das multiplizieren der matrizen wandert man sie entlang
-
-        resultDraw.push_back(result.getTranslation()); //translation will be now in result space always
-    }
-
-    //final vector
-    FVector outputVec = result * endVec;
-    resultDraw.push_back(outputVec);
-
-
-
-    //draw
-    if (world != nullptr && DEBUG_DRAW)
-    {
-        for (int i = 1; i < resultDraw.size(); i++)
-        {
-            DebugHelper::showLineBetween(world, resultDraw[i - 1], resultDraw[i], color, displayTime);
-        }
-    }
-
-    //returns the final matrix
-    return result;
-}
-
-
 
 
 
@@ -931,21 +875,43 @@ MMatrix TwoBone::buildWithOutput(
             updateLimb(currentBone, current, location);
         }
     }
+
+    //testing needed!
+    if(resultMatricies.size() >= 3){
+        copyCurrentMatricies(
+            resultMatricies[0],
+            resultMatricies[1],
+            resultMatricies[2]
+        );
+    }
+
     return result;
-
-    
 }
 
 
 
 
-//copy data for outside use
-void TwoBone::copyCurrentMatricies(){
-    hipCopy = hip;
-	kneeCopy = knee;
-	footCopy = foot;
-}
 
 FVector TwoBone::endLimbWorldLocation(){
     return footCopy.getTranslation();
+}
+
+
+
+
+void TwoBone::copyCurrentMatricies(
+    MMatrix &hipToCopy,
+    MMatrix &kneeToCopy,
+    MMatrix &footToCopy
+){
+    hipCopy = hipToCopy;
+	kneeCopy = kneeToCopy;
+	footCopy = footToCopy;
+}
+
+
+void TwoBone::copyLatestPositions(FVector &hipOut, FVector &kneeOut, FVector &endOut){
+    hipOut = hipCopy.getTranslation();
+    kneeOut = kneeCopy.getTranslation();
+    endOut = footCopy.getTranslation();
 }

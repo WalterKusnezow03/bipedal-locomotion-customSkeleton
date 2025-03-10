@@ -81,6 +81,7 @@ public:
 	FVector copyLatestStartLimbPosition();
 	FVector copyLatestEndLimbPosition();
 
+	void copyLatestPositions(FVector &hipOut, FVector &kneeOut, FVector &endOut);
 
 	void resetAllRotations();
 
@@ -97,7 +98,7 @@ private:
 
 private:
 	bool isArmFlag = false;
-	bool DEBUG_DRAW = false;
+	bool DEBUG_DRAW = true; // false;
 
 	float createEthaFromDistance(float distance);
 	float angleFromEtha(float etha);
@@ -195,8 +196,12 @@ private:
 		std::vector<MMatrix *> &matrizen // must not be empty
 	);
 
-	
-	void copyCurrentMatricies();
+	void copyCurrentMatricies(
+		MMatrix &hipToCopy,
+		MMatrix &kneeToCopy,
+		MMatrix &footToCopy
+	);
 
+	//deprecated
 	bool pitchTooLow(float pitchAngle);
 };

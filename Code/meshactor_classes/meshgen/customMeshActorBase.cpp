@@ -8,6 +8,8 @@
 #include "KismetProceduralMeshLibrary.h"
 #include "p2/meshgen/generation/bezierCurve.h"
 #include "ELod.h"
+#include "p2/meshgen/foliage/ETerrainType.h"
+#include "p2/util/FVectorUtil.h"
 #include "p2/meshgen/customMeshActorBase.h"
 
 // Sets default values
@@ -51,6 +53,7 @@ void AcustomMeshActorBase::BeginPlay()
 void AcustomMeshActorBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+    TickShaderRunningTime(DeltaTime);
     changeLodBasedOnPlayerPosition();
 }
 
@@ -68,8 +71,9 @@ void AcustomMeshActorBase::createTerrainFrom2DMap(
     thisTerrainType = typeIn;
     TArray<FVectorTouple> touples;
     createTerrainFrom2DMap(map, touples, typeIn);
-}
 
+    addRandomNodesToNavmesh(touples);
+}
 
 void AcustomMeshActorBase::createTerrainFrom2DMap(
     std::vector<std::vector<FVector>> &map,
@@ -209,24 +213,6 @@ void AcustomMeshActorBase::createTerrainFrom2DMap(
     stoneLayer.calculateNormals();*/
     ReloadMeshAndApplyAllMaterials();
 
-    /**
-     * ADD NODES TO NAVMESH
-     */
-
-    bool addToNavMesh = true;
-    if(addToNavMesh){
-        double StartTime = FPlatformTime::Seconds();
-        //add all normal centers to navmesh to allow the bots to move over the terrain
-        if(PathFinder *f = PathFinder::instance(GetWorld())){
-            FVector offset(0, 0, 70);
-            f->addNewNodeVector(navMeshAdd, offset);
-        }
-        double EndTime = FPlatformTime::Seconds();
-        double ElapsedTime = EndTime - StartTime;
-        DebugHelper::addTime(ElapsedTime);
-        DebugHelper::logTime("nav mesh added");
-    }
-
     enableLodListening();
 }
 
@@ -353,9 +339,74 @@ void AcustomMeshActorBase::appendLodTerrain(
 
 
 
+void AcustomMeshActorBase::addRandomNodesToNavmesh(TArray<FVectorTouple> &touples){
+    /**
+     * ADD NODES TO NAVMESH
+     */
+    int size = touples.Num();
+    if(size <= 0){
+        return;
+    }
+
+    //find vertical normals
+    //second is normal, first is vertex
+    std::vector<FVector> positionsPotential;
+    
+    /*
+    filterTouplesForVerticalVectors(
+        touples,
+        positionsPotential
+    );*/
+
+    int count = touples.Num();
+    std::set<int> indices;
+    for (int i = 0; i < count; i++){
+        int newIndex = FVectorUtil::randomNumber(0, positionsPotential.size()) % positionsPotential.size();
+        indices.insert(newIndex);
+    }
+
+    int limit = 30;
+    std::vector<FVector> picked;
+    for (auto &ref : indices)
+    {
+        picked.push_back(positionsPotential[ref]);
+        limit--;
+        if(limit <= 0){
+            break;
+        }
+    }
+
+    // add all normal centers to navmesh to allow the bots to move over the terrain
+    if (PathFinder *f = PathFinder::instance(GetWorld()))
+    {
+        FVector offset(0, 0, 70);
+        f->addNewNodeVector(picked, offset);
+    }
+}
 
 
 
+
+void AcustomMeshActorBase::filterTouplesForVerticalVectors(
+    TArray<FVectorTouple> &touples,
+    std::vector<FVector> &potentialLocations
+){
+    // iterate over touples
+    // determine normal angle and apply foliage, rocks, trees accordingly
+    if (touples.Num() < 1){
+        return;
+    }
+
+    //if normal faces towards up: flat area, create something
+    for(FVectorTouple &t : touples){
+        FVector &location = t.first();
+        FVector &normal = t.second();
+        bool facingUpwards = FVectorUtil::directionIsVertical(normal);
+        if(facingUpwards){
+            potentialLocations.push_back(location); 
+        }
+    }
+}
 
 
 
@@ -467,16 +518,9 @@ void AcustomMeshActorBase::ReloadMeshAndApplyAllMaterials(){
         for (int i = 0; i < materials.size(); i++){
             int layer = layerByMaterialEnum(materials[i]);
             MeshData &meshData = findMeshDataReference(materials[i], currentLodLevel, raycastOn);
-            /*
-            updateMesh(
-                UProceduralMeshComponent &meshcomponent,
-                MeshData &otherMesh, //must be a reference which is in class scope, safe
-                int layer,
-                bool enableCollision
-            )
-            */
             updateMesh(*Mesh, meshData, layer, raycastOn);
             ApplyMaterial(materials[i]);
+
         }
     }
 
@@ -539,8 +583,8 @@ void AcustomMeshActorBase::updateMesh(
         true
     );
 
-    //set for spehere overlap
-    meshcomponent.SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    
+    //meshcomponent.SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     meshcomponent.SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
     meshcomponent.SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 
@@ -610,7 +654,9 @@ void AcustomMeshActorBase::replaceMeshData(MeshData &meshdata, materialEnum type
 /// @brief applys a material to the whole component (slot 0 by default)
 /// @param ProceduralMeshComponent 
 /// @param Material 
-void AcustomMeshActorBase::ApplyMaterial(UProceduralMeshComponent* ProceduralMeshComponent, UMaterial* Material) {
+void AcustomMeshActorBase::ApplyMaterial(UProceduralMeshComponent* ProceduralMeshComponent, 
+    UMaterialInterface* Material
+) {
     ApplyMaterial(ProceduralMeshComponent, Material, 0);
 }
 
@@ -620,7 +666,7 @@ void AcustomMeshActorBase::ApplyMaterial(UProceduralMeshComponent* ProceduralMes
 /// @param layer layer to apply for / index
 void AcustomMeshActorBase::ApplyMaterial(
     UProceduralMeshComponent* ProceduralMeshComponent, 
-    UMaterial* Material,
+    UMaterialInterface* Material,
     int layer
 ) {
 	if (ProceduralMeshComponent != nullptr && Material != nullptr) {
@@ -790,4 +836,62 @@ bool AcustomMeshActorBase::isInRange(FVector &a, int maxDistance){
     return (std::abs(a.X - thisLocation.X) < maxDistance) &&
            (std::abs(a.Y - thisLocation.Y) < maxDistance) &&
            (std::abs(a.Z - thisLocation.Z) < maxDistance);
+}
+
+
+
+
+
+/**
+ * 
+ * 
+ * --- refresh mesh for dynamic actors like water or other moving meshes ---
+ * 
+ * 
+ */
+void AcustomMeshActorBase::TickShaderRunningTime(float DeltaTime){
+    shaderRunningTime += DeltaTime;
+    if(shaderRunningTime > 2 * M_PI){
+        shaderRunningTime = 0.0f;
+    }
+}
+
+void AcustomMeshActorBase::vertexShaderFor(MeshData &data){
+    TArray<FVector> &vertecies = data.getVerteciesRef();
+    for (int i = 0; i < vertecies.Num(); i++){
+        FVector &current = vertecies[i];
+        applyShaderToVertex(current);
+    }
+}
+
+/// @brief apply vertex shader to the given vertex
+/// @param vertex vertex to move
+void AcustomMeshActorBase::applyShaderToVertex(FVector &vertex){
+    //keep empty, is virtaul here.
+}
+
+void AcustomMeshActorBase::refreshMesh(
+    UProceduralMeshComponent& meshComponent,
+    MeshData &other,
+    int layer
+){
+    if(other.verteciesNum() <= 0){
+        return;
+    }
+
+    meshComponent.UpdateMeshSection(
+        layer, 
+        other.getVerteciesRef(), 
+        other.getNormalsRef(), 
+        other.getUV0Ref(),
+        other.getVertexColorsRef(), 
+        other.getTangentsRef()
+    );
+
+    if(false){
+        meshComponent.SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        meshComponent.SetCollisionResponseToAllChannels(ECR_Ignore);
+        meshComponent.SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+    }
+
 }

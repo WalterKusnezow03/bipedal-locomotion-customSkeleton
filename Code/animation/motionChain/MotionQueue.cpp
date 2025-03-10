@@ -137,7 +137,11 @@ void MotionQueue::Tick(
                 FVector posWorld = transform * location;
 
                 //achtung hier neu: actor animation zusätzlich abrufen!
-                posWorld += item->actorAnimationOffsetLocal();
+                //posWorld += item->actorAnimationOffsetLocal(); //old
+
+                FVector nonRotated = item->actorAnimationOffsetLocal();
+                nonRotated = rotationRein * nonRotated;
+                posWorld += nonRotated;
 
                 item->SetActorLocation(posWorld);
                 
@@ -156,18 +160,28 @@ void MotionQueue::Tick(
         FVector weight(0, 0, -1);
 
         //NEW wingsuit section
-        if(currentState == ArmMotionStates::wingsuitOpen && !transitioning){
-            MotionAction *currentStatePointer = &statesMap[currentState];
-            if(currentStatePointer != nullptr){
+        if(currentState == ArmMotionStates::wingsuitOpen){
+            if(!transitioning){
+                MotionAction *currentStatePointer = &statesMap[currentState];
+                if(currentStatePointer != nullptr){
 
-                currentStatePointer->copyPositionSymetricalOnYZPane(
-                    leftHandtarget,
-                    rightHandtarget
-                );
-                
-                //move to world
-                leftHandtarget = transform * leftHandtarget; //move to world
-                rightHandtarget = transform * rightHandtarget; //move to world
+                    currentStatePointer->copyPositionSymetricalOnYZPane( //x is forward
+                        leftHandtarget,
+                        rightHandtarget
+                    );
+                    
+                    //move to world
+                    leftHandtarget = transformLeftArm * leftHandtarget; //move to world
+                    rightHandtarget = transformRightArm * rightHandtarget; //move to world
+                }
+            }
+            if(transitioning){
+                //move target right to local, flip on yz pane for left arm and move to world again
+                MMatrix invere = transformRightArm.createInverse();
+                FVector rightHandtargetLocal = invere * rightHandtarget;
+                FVector leftHandTargetLocal = rightHandtargetLocal;
+                leftHandTargetLocal.Y *= -1.0f;
+                leftHandtarget = transformLeftArm * leftHandTargetLocal; //move to world space
             }
         }
         //NEW END

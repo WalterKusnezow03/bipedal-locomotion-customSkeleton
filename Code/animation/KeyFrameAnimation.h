@@ -83,7 +83,7 @@ private:
 	 */
 
 
-	bool DEBUGDRAW_RAYCAST = true;
+	bool DEBUGDRAW_RAYCAST = false;
 
 	float raycastVerticalStartOffsetAdd = 500.0f;
 	float raycastScaleVector = 5000.0f;
@@ -128,10 +128,8 @@ private:
 
 	bool performRaycast(UWorld *world, FVector &Start, FVector &dir, FVector &outputHit);
 
-
-
-
 	
+
 	void updateAverageVelocity();
 	float averageVelocityOfFrames = 0.0f;
 	float linearVelocity(FVector &a, FVector &b, float timeBetween);
