@@ -48,7 +48,17 @@ private:
 
 	bool transitioning = false;
 
-	void moveBoneAndSnapEndEffectorToTarget(
+	void moveBoneAndSnapEndEffectorToTargetWorld(
+		float DeltaTime,
+		FVector targetLocal,
+		FVector weight,
+		MMatrix &translationActor,
+		MMatrix &endEffector,
+		TwoBone &bone,
+		UWorld *world
+	);
+
+	void moveBoneAndSnapEndEffectorToTargetLocal(
 		float DeltaTime,
 		FVector targetLocal,
 		FVector weight,

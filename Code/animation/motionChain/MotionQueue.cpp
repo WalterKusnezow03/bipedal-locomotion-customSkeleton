@@ -83,6 +83,7 @@ void MotionQueue::Tick(
 
     if(item != nullptr){
 
+        FVector transitionFrameLocal;
         if (transitioning)
         {
 
@@ -97,6 +98,9 @@ void MotionQueue::Tick(
             FRotator rotation;
             FVector posLocal = interpolator.interpolate(DeltaTime, rotation); //interpoliert immer in local space
             FVector posWorld = transform * posLocal;
+
+            //copy for later use
+            transitionFrameLocal = posLocal;
 
             //actor and wanted rotation combined for the carried item
             MMatrix rotatorMatrix = MMatrix::createRotatorFrom(rotation);
@@ -164,32 +168,21 @@ void MotionQueue::Tick(
             if(!transitioning){
                 MotionAction *currentStatePointer = &statesMap[currentState];
                 if(currentStatePointer != nullptr){
-
                     currentStatePointer->copyPositionSymetricalOnYZPane( //x is forward
                         leftHandtarget,
                         rightHandtarget
                     );
-                    
-                    //move to world
-                    leftHandtarget = transformLeftArm * leftHandtarget; //move to world
-                    rightHandtarget = transformRightArm * rightHandtarget; //move to world
                 }
             }
             if(transitioning){
                 //move target right to local, flip on yz pane for left arm and move to world again
-                MMatrix invere = transformRightArm.createInverse();
-                FVector rightHandtargetLocal = invere * rightHandtarget;
-                FVector leftHandTargetLocal = rightHandtargetLocal;
-                leftHandTargetLocal.Y *= -1.0f;
-                leftHandtarget = transformLeftArm * leftHandTargetLocal; //move to world space
+                rightHandtarget = transitionFrameLocal;
+                leftHandtarget = transitionFrameLocal;
+                leftHandtarget.Y *= -1.0f;
             }
-        }
-        //NEW END
 
-
-        //dont move arms if state is none
-        if(handsAtItem()){
-            moveBoneAndSnapEndEffectorToTarget(
+            //apply
+            moveBoneAndSnapEndEffectorToTargetLocal(
                 DeltaTime,
                 leftHandtarget,
                 weight,
@@ -199,7 +192,33 @@ void MotionQueue::Tick(
                 world
             );
 
-            moveBoneAndSnapEndEffectorToTarget(
+            moveBoneAndSnapEndEffectorToTargetLocal(
+                DeltaTime,
+                rightHandtarget,
+                weight,
+                transformRightArm, //transform limb start
+                endEffectorRight,
+                rightArm,
+                world
+            );
+            return;
+        }
+        //NEW END
+
+
+        //dont move arms if state is none
+        if(handsAtItem()){
+            moveBoneAndSnapEndEffectorToTargetWorld(
+                DeltaTime,
+                leftHandtarget,
+                weight,
+                transformLeftArm, // transform limb start
+                endEffectorLeft,
+                leftArm,
+                world
+            );
+
+            moveBoneAndSnapEndEffectorToTargetWorld(
                 DeltaTime,
                 rightHandtarget,
                 weight,
@@ -253,7 +272,7 @@ bool MotionQueue::handsAtItem(){
     return true;
 }
 
-void MotionQueue::moveBoneAndSnapEndEffectorToTarget(
+void MotionQueue::moveBoneAndSnapEndEffectorToTargetWorld(
     float DeltaTime,
     FVector targetWorld,
     FVector weight,
@@ -263,12 +282,34 @@ void MotionQueue::moveBoneAndSnapEndEffectorToTarget(
     UWorld *world
 ){
     weight = weight.GetSafeNormal();
-
     translationActor.transformFromWorldToLocalCoordinates(targetWorld);
 
 	bone.rotateEndToTargetAndBuild(
 		world,
 		targetWorld, //as local now
+		weight,
+		translationActor, // hip start with orient
+		endEffector, //ownLocationFoot,  // foot apply positions
+		FColor::Red, 
+		DeltaTime * 2.0f
+	);
+}
+
+
+void MotionQueue::moveBoneAndSnapEndEffectorToTargetLocal(
+    float DeltaTime,
+    FVector targetLocal,
+    FVector weight,
+    MMatrix &translationActor,
+    MMatrix &endEffector,
+    TwoBone &bone,
+    UWorld *world
+){
+    weight = weight.GetSafeNormal();
+
+	bone.rotateEndToTargetAndBuild(
+		world,
+		targetLocal, //as local now
 		weight,
 		translationActor, // hip start with orient
 		endEffector, //ownLocationFoot,  // foot apply positions

@@ -1855,19 +1855,17 @@ void BoneController::TickWingsuitUpdate(float DeltaTime){
 
 
 			//hip und foot erstmal so. DEBUG 
-			MMatrix transform = currentTransform();
-			/*
-			FVector d(-legScaleCM, 0, 0);
-			d = transform * d;
-			FVector e(-legScaleCM * 2, 0, 0); // debug wise vector
-			e = transform * e;
-			*/
-			FVector d = transform.getTranslation();
+			MMatrix dtransform = currentTransform(FOOT_1);
+			FVector d = dtransform.getTranslation();
 			FVector e = ownLocationFoot1.getTranslation();
+
+			MMatrix d1transform = currentTransform(FOOT_2);
+			FVector d1 = d1transform.getTranslation();
+			FVector e1 = ownLocationFoot2.getTranslation();
 
 
 			wingsuitMeshActorPointer->refreshVerteciesForBothWings(
-				a, b, c, d, e, a1, b1, c1, d, e
+				a, b, c, d, e, a1, b1, c1, d1, e1
 			);
 
 			//debug draw
