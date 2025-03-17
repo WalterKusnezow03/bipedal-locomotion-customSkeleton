@@ -4,6 +4,7 @@
 #include "HandController.h"
 #include "p2/weapon/carriedItem.h"
 #include "HandBoneIndexEnum.h"
+#include "p2/DebugHelper.h"
 #include "p2/entities/customIk/MMatrix.h"
 
 HandController::HandController()
@@ -269,7 +270,9 @@ void HandController::Tick(
 void HandController::Tick(float DeltaTime, UWorld *worldin, FVector &newLocation, AcarriedItem *item){
     if(item == nullptr){
         Tick(DeltaTime, worldin, newLocation);
+        return;
     }
+
     setTranslation(newLocation);
     world = worldin;
 

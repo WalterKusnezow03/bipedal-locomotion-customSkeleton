@@ -1738,7 +1738,7 @@ void BoneController::debugUpdateTransform(FVector location, FRotator rotation){
 		float distMade = FVector::Dist(location, ownLocation.getTranslation());
 		if(std::abs(distMade) >= 0.1f){
 			playerMoved = true;
-			DebugHelper::showScreenMessage("PLAYER MOVED!", FColor::Green);
+			//DebugHelper::showScreenMessage("PLAYER MOVED!", FColor::Green);
 		}
 		else
 		{

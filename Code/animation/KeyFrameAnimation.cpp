@@ -596,7 +596,7 @@ void KeyFrameAnimation::projectToGround(
 
         FVector offsetMade = worldHitOutput - frameInWorldNoRayOffset; //CHECKUP NEEDED!  AB = B - A
 
-        DebugHelper::showScreenMessage("z offset", (float) offsetMade.Z);
+        //DebugHelper::showScreenMessage("z offset", (float) offsetMade.Z);
 
         containerInOut.updateWorldHitAndOffset(worldHitOutput, offsetMade);
     }

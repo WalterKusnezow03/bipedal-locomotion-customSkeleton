@@ -254,6 +254,13 @@ void MotionQueue::Tick(
         );
 
 
+        //tick hands too
+        MMatrix rot = transform.extarctRotatorMatrix(); //MIGHT BE WRONG!
+        FVector handLeftNewPos = endEffectorLeft.getTranslation();
+        FVector handRightNewPos = endEffectorRight.getTranslation();
+        leftHand.Tick(DeltaTime, world, handLeftNewPos,rot, item);
+        rightHand.Tick(DeltaTime, world, handRightNewPos,rot, item);
+
     }
 
     
