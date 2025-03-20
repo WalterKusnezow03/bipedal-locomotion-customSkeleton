@@ -8,6 +8,9 @@ MotionQueue::MotionQueue()
     updateState(ArmMotionStates::handsFollowItem); //default at start
     transitioning = false;
     hipInterpolator.setNewTimeToFrame(0.5f); //debug wise
+    interpolator.useHermiteSplineInterpolation(false); //dont use it!
+    hipInterpolator.useHermiteSplineInterpolation(false);
+    
 }
 
 MotionQueue::~MotionQueue()
@@ -81,6 +84,168 @@ void MotionQueue::Tick(
     float DeltaTime
 ){
 
+
+    //NEW testing
+    MotionAction *currentStatePointer = &statesMap[currentState];
+    FVector transitionFrameLocal;
+    FVector transitionFrameWorld;
+    if (transitioning)
+    {
+        //update pos based on item in world space
+        if(item != nullptr){
+            FVector currentLocationWorldWillBeLocal = item->GetActorLocation();
+            transform.transformFromWorldToLocalCoordinates(currentLocationWorldWillBeLocal);
+
+            //interpolate override start local
+            //dann interpolieren
+            interpolator.overrideStartSpeedRelative(currentLocationWorldWillBeLocal);
+        }
+
+
+        //hier muss interpolator auch noch angetickt werden
+        FRotator rotation;
+        FVector posLocal = interpolator.interpolate(DeltaTime, rotation); //interpoliert immer in local space
+        FVector posWorld = transform * posLocal;
+
+        //copy for later use
+        transitionFrameLocal = posLocal;
+        transitionFrameWorld = posWorld;
+
+        //actor and wanted rotation combined for the carried item
+        if(item != nullptr){
+            MMatrix rotatorMatrix = MMatrix::createRotatorFrom(rotation);
+            MMatrix transformCopy = transform;
+            transformCopy.setTranslation(0, 0, 0);
+            transformCopy = transformCopy * rotatorMatrix; 
+    
+            FRotator finalRotation = transformCopy.extractRotator();
+    
+            item->SetActorRotation(finalRotation);
+            item->SetActorLocation(posWorld);
+        }
+       
+        
+
+        //wenn fertig interpoliert, abbruch. Klar.
+        if(interpolator.hasReachedTarget()){
+            transitioning = false;
+        }
+    
+    }else{
+        //default follow
+        
+        if(currentStatePointer != nullptr){
+
+            
+            
+
+            FVector location = currentStatePointer->copyPosition();
+            FVector posWorld = transform * location;
+
+            if(item != nullptr){
+
+                //setting up data for the weapon transform
+                MMatrix rotationRein = transform;
+                rotationRein.setTranslation(0, 0, 0); //make pure rotation matrix
+                MMatrix rotation = currentStatePointer->copyRotationAsMMatrix();
+                rotationRein *= rotation; //erst skellet dann target rotation
+
+                FRotator finalRotation = rotationRein.extractRotator();
+                item->SetActorRotation(finalRotation);
+
+
+                FVector nonRotated = item->actorAnimationOffsetLocal();
+                nonRotated = rotationRein * nonRotated;
+                posWorld += nonRotated;
+                item->SetActorLocation(posWorld);
+            }
+
+            transitionFrameLocal = location;
+            transitionFrameWorld = posWorld;
+            
+            
+        }else{
+            DebugHelper::showScreenMessage("ISSUE!!!", FColor::Red);
+        }
+    }
+
+    FVector weight(0, 0, -1);
+    FVector rightHandtarget = transitionFrameWorld;
+    FVector leftHandtarget = transitionFrameWorld;
+
+    if(item != nullptr){
+        rightHandtarget = item->rightHandLocation();
+        leftHandtarget = item->leftHandLocation();
+
+        if(currentState == ArmMotionStates::wingsuitOpen){
+            if(currentStatePointer != nullptr && currentStatePointer->isSetToLocalFrame2armSeperate()){
+                FVector localRight = transitionFrameLocal;  //x is forward, flip on xz pane, y*=-1
+                FVector localLeft = transitionFrameLocal;
+                localLeft.Y *= -1.0f;
+
+                leftHandtarget = transform * localLeft;
+            }
+        }
+
+    }else{
+
+        //item is null, check for sperate targets
+        if(currentStatePointer != nullptr){
+            if(currentStatePointer->isSetToLocalFrame2armSeperate()){
+                FVector localRight = transitionFrameLocal;  //x is forward, flip on xz pane, y*=-1
+                FVector localLeft = transitionFrameLocal;
+                localLeft.Y *= -1.0f;
+
+                rightHandtarget = transform * localRight;
+                leftHandtarget = transform * localLeft;
+            }
+        }
+
+        
+    }
+
+
+
+
+
+
+
+
+
+
+    moveBoneAndSnapEndEffectorToTargetWorld(
+        DeltaTime,
+        leftHandtarget,
+        weight,
+        transformLeftArm, // transform limb start
+        endEffectorLeft,
+        leftArm,
+        world
+    );
+
+    moveBoneAndSnapEndEffectorToTargetWorld(
+        DeltaTime,
+        rightHandtarget,
+        weight,
+        transformRightArm, //transform limb start
+        endEffectorRight,
+        rightArm,
+        world
+    );
+
+    MMatrix rot = transform.extarctRotatorMatrix(); //MIGHT BE WRONG!
+    FVector handLeftNewPos = endEffectorLeft.getTranslation();
+    FVector handRightNewPos = endEffectorRight.getTranslation();
+    leftHand.Tick(DeltaTime, world, handLeftNewPos,rot, item);
+    rightHand.Tick(DeltaTime, world, handRightNewPos,rot, item);
+    
+
+
+
+
+
+    /*
+    //OLD
     if(item != nullptr){
 
         FVector transitionFrameLocal;
@@ -261,7 +426,7 @@ void MotionQueue::Tick(
         leftHand.Tick(DeltaTime, world, handLeftNewPos,rot, item);
         rightHand.Tick(DeltaTime, world, handRightNewPos,rot, item);
 
-    }
+    }*/
 
     
     

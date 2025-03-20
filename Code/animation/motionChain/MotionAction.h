@@ -32,7 +32,12 @@ public:
 		FVector &outRight
 	);
 
+	void setLocalFrame2ArmsSeperate(bool in);
+	bool isSetToLocalFrame2armSeperate();
+
 private:
 	FVector targetLocation;
 	FRotator targetRotation;
+
+	bool targetIsSplit2Arms = false;
 };

@@ -373,11 +373,34 @@ void BoneController::setupAnimation(){
 	MotionAction wingsuitState;
 	FRotator rotationForTarget4;
 	//rotationForTarget4.Roll = -90; 
-	FVector targetArmLocationWingsuit(armScaleCM * 0.5f, armScaleCM * 0.5f, armScaleCM); //x is forward
+	FVector targetArmLocationWingsuit(0.0f, armScaleCM, armScaleCM * 1.5f); //x is forward
 	wingsuitState.setLocationAndRotation(targetArmLocationWingsuit, rotationForTarget4);
+	wingsuitState.setLocalFrame2ArmsSeperate(true);
 	armMotionQueue.addTarget(ArmMotionStates::wingsuitOpen, wingsuitState);
 
 
+
+
+
+
+	//not item state, paralell arms
+	MotionAction stateNoneNoItem;
+	FVector hipOffset = hip1MatrixOffset.getTranslation();
+	FVector loactionArmsNone(0.0f, hipOffset.Size(), 0.0f);
+	FRotator nonerotator;
+	stateNoneNoItem.setLocationAndRotation(loactionArmsNone, nonerotator);
+	stateNoneNoItem.setLocalFrame2ArmsSeperate(true);
+	armMotionQueue.addTarget(ArmMotionStates::none, stateNoneNoItem);
+
+
+	//running item state, hochanschlag, nur rechts an waffe
+	MotionAction hochAnschlagState;
+	FRotator rotationForTarget5;
+	rotationForTarget5.Pitch = 90; //up
+	FVector targetHochAnschlagStateLocation(armScaleCM * 0.2f, armScaleCM * 0.2f, armScaleCM * 1.5f);
+	hochAnschlagState.setLocationAndRotation(targetHochAnschlagStateLocation, rotationForTarget5);
+	stateNoneNoItem.setLocalFrame2ArmsSeperate(true);//nur rechts an waffe
+	armMotionQueue.addTarget(ArmMotionStates::running, hochAnschlagState);
 
 }
 
@@ -622,7 +645,8 @@ void BoneController::attachCarriedItem(AcarriedItem *carriedItem){
 	if(carriedItem != nullptr){
 		attachedCarriedItem = carriedItem;
 		attachedCarriedItem->SetActorEnableCollision(false);
-		weaponAimDownSight();
+		armMotionQueue.updateState(ArmMotionStates::handsFollowItem); // force update
+		// weaponAimDownSight();
 	}
 }
 
@@ -843,7 +867,16 @@ void BoneController::updateStatesBasedOnCamera(UCameraComponent &camera){
 		FRotator camPitched;
 		camPitched.Pitch = cameraRot.Pitch * -1.0f; //must be flipped.
 
-		
+		//sight offset vector
+		if(attachedCarriedItem){
+			FVector offsetSight = attachedCarriedItem->sightOffsetNoRotation();
+			MMatrix rotMat(camPitched);
+			offsetSight = rotMat * offsetSight;
+
+			//ads location of weapon
+			camLocation += offsetSight;
+		}
+
 		//ADS OVERRIDE
 		MotionAction action;
 		action.setLocationAndRotation(camLocation, camPitched); //local matrix now
@@ -894,10 +927,21 @@ void BoneController::weaponHolsterPosition(){
 	}
 }
 
+//hochanschlag
+void BoneController::weaponRaisedReadyPosition(){
+	if(canChangeStateNow()){
+		if(attachedCarriedItem != nullptr){
+			armMotionQueue.updateStateIfPossible(ArmMotionStates::running);
+		}
+	}
+}
+
+
 
 
 void BoneController::dropWeapon(){
 	attachedCarriedItem = nullptr;
+	armMotionQueue.updateState(ArmMotionStates::none); //force update
 }
 
 void BoneController::openWingsuit(){

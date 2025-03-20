@@ -320,15 +320,32 @@ FRotator TargetInterpolator::interpolationRotation(FRotator fromIn, FRotator toI
 /// @param b 
 /// @return signed shorter angle
 float TargetInterpolator::rotationDirectionShorter(float a, float b){
-    a = std::clamp(a, -180.0f, 180.0f);
-    b = std::clamp(b, -180.0f, 180.0f);
+    
+    a = std::fmod(a + 180.0f, 360.0f) - 180.0f;
+    b = std::fmod(b + 180.0f, 360.0f) - 180.0f;
 
+    float diff = b - a;
+    
+    if (diff > 180.0f) {
+        diff -= 360.0f;
+    }
+    if (diff < -180.0f) {
+        diff += 360.0f;
+    }
+
+    return diff;
+
+
+    //old
+    //a = std::clamp(a, -180.0f, 180.0f);
+    //b = std::clamp(b, -180.0f, 180.0f);
+    /*
     float diffA = a - b;
     float diffB = b - a;
-    if(std::abs(diffA) < std::abs(diffB)){
+    if(std::abs(diffA) <= std::abs(diffB)){
         return diffA;
     }
-    return diffB;
+    return diffB;*/
 }
 
 

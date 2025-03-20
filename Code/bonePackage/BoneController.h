@@ -72,6 +72,7 @@ public:
 	void weaponAimDownSight();
 	void weaponContactPosition();
 	void weaponHolsterPosition();
+	void weaponRaisedReadyPosition();
 
 	void dropWeapon();
 

@@ -10,6 +10,7 @@ MotionAction::MotionAction()
 MotionAction::MotionAction(FVector &a, FRotator &b){
     targetRotation = b;
     targetLocation = a;
+    targetIsSplit2Arms = false;
 }
 
 MotionAction::MotionAction(const MotionAction &other){
@@ -23,6 +24,7 @@ MotionAction& MotionAction::operator=(const MotionAction &other){
     }
     targetRotation = other.targetRotation;
     targetLocation = other.targetLocation;
+    targetIsSplit2Arms = other.targetIsSplit2Arms;
     return *this;
 }
 
@@ -76,4 +78,13 @@ void MotionAction::copyPositionSymetricalOnYZPane(
     outRight = copyPosition();
     outLeft.Y *= -1.0f;
 
+}
+
+
+void MotionAction::setLocalFrame2ArmsSeperate(bool in){
+    targetIsSplit2Arms = in;
+}
+
+bool MotionAction::isSetToLocalFrame2armSeperate(){
+    return targetIsSplit2Arms;
 }
